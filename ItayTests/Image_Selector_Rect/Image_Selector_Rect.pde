@@ -27,6 +27,9 @@ String fileName;
 
 String lastImg;
 
+int lengthX;
+int lengthY;
+
 void setup() {  
   size(1280, 530);
   colorMode(HSB, 360, 360, 360);
@@ -98,23 +101,55 @@ void mousePressed() {
 }
 
 void mouseDragged() {
-  rect(prevX, prevY, mouseX-prevX, mouseY-prevY);
+
+  if ( keyPressed && keyCode == SHIFT) {
+    lengthX = mouseX-prevX;
+    lengthY = mouseY-prevY;
+    rect(prevX, prevY, lengthX, lengthY);
+  } else {  
+    lengthX = (mouseX-prevX);
+    lengthY =  abs(lengthX);
+    if (mouseY<prevY) lengthY*=-1;
+    rect(prevX, prevY, lengthX, lengthY);
+  }
 }
 
 void mouseReleased() {
   int x, y, w, h;
-  x = min(prevX, mouseX);
-  y = min(prevY, mouseY);
-  if (mouseX > prevX) w = mouseX - prevX;
-  else w = prevX - mouseX;
-  if (mouseY > prevY) h = mouseY - prevY;
-  else h = prevY - mouseY;
+  x = min(prevX, lengthX+prevX);
+  y = min(prevY, lengthY+prevY);
+  //if (mouseX > prevX) w = mouseX - prevX;
+  //else w = prevX - mouseX;
+  //if (mouseY > prevY) h = mouseY - prevY;
+  //else h = prevY - mouseY;
+  w=lengthX;
+  h=lengthY;
+  if (w<0) {
+    //x+=w;
+    println("w: "+w, "x: "+x);
+    //x=x-abs(w);
+    w*=-1;
+  }
+
+  if (h<0) {
+    //y+=h;
+    println("h: "+h, "y: "+y);
+    //y=y-abs(h);
+    h*=-1;
+  }
+
+
+  if (keyPressed && keyCode == SHIFT) {
+    println("---");
+    println(prevX, prevY, lengthX, lengthY);
+    println(x, y, w, h);
+  }
 
   points[num].append(x);
   points[num].append(y);
   points[num].append(w);
   points[num].append(h);
-  printArray(points[num]);
+  //printArray(points[num]);
   noStroke();
   cropped = get(x+2, y+2, w-2, h-2);
   lastImg = state+"/"+state+""+year()+""+month()+""+day()+""+hour()+""+minute()+""+second()+".png";
@@ -144,18 +179,17 @@ void keyPressed() {
       num--;
       println(num + ". working on File: " + fileNames[num]);
     } else if (keyCode == DOWN) {
-            
+
       //f = new File(dataPath(lastImg));
       //System.gc();
       //f.delete();
       //println(f);
       //if (f.exists()) {
       //  println("Found file to trash");
-        
+
       //  println("Image Trashed...");
       //} else {println("Can't find file in folder...");}
       //cropped = null;
-      
     }
   }
 
