@@ -1,3 +1,5 @@
+# Capillaries recognition tests
+
 import numpy as np
 import cv2 as cv
 
@@ -11,15 +13,25 @@ contours = sorted(contours, key=cv.contourArea, reverse=True)
 
 print "Contours Count:", len(contours)
 
-cnt = contours[1]
-print cnt
+contImg = im
+hullImg = imgray
+for i in range(0, 3):
+    cMoments = cv.moments(contours[i])
+    cPos = (int(cMoments['m10']/cMoments['m00']), int(cMoments['m01']/cMoments['m00']))
+
+    contImg = cv.drawContours(contImg, contours, i, (0, 255, 0), 2)
+    contImg = cv.putText(contImg, str(i), cPos, cv.FONT_HERSHEY_PLAIN, 2, (255, 255, 255), 2)
+
+    epsilon = 0.01 * cv.arcLength(contours[i], True)
+    approx = cv.approxPolyDP(contours[i], epsilon, True)
+    hullImg = cv.drawContours(hullImg, [approx], -1, (255, 255, 255), 2)
 
 
-contImg = cv.drawContours(im, contours, 0, (0,255,0), 2)
 
 cv.imshow("grey", imgray)
 cv.imshow("thresh", thresh)
 cv.imshow("contours", contImg)
+cv.imshow("hulls", hullImg)
 cv.waitKey(0)
 cv.destroyAllWindows()
 
