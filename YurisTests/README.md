@@ -16,3 +16,16 @@
 [Thresholding](https://docs.opencv.org/3.4/d7/d4d/tutorial_py_thresholding.html)
 
 [OpenCV - using cv2.approxPolyDP() correctly](https://stackoverflow.com/questions/41879315/opencv-using-cv2-approxpolydp-correctly/41880357)
+
+Generalised Hough Transform:
+https://en.wikipedia.org/wiki/Generalised_Hough_transform
+http://homepages.inf.ed.ac.uk/rbf/HIPR2/hough.htm
+https://www.pyimagesearch.com/2014/07/21/detecting-circles-images-using-opencv-hough-circles/
+https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_houghcircles/py_houghcircles.html
+
+Segmentation /  Instance Segmentation:
+https://www.learnopencv.com/image-segmentation/
+https://stackoverflow.com/questions/38403205/how-to-segment-blood-vessels-python-opencv
+
+Skeletonization:
+http://opencvpython.blogspot.com/2012/05/skeletonization-using-opencv-python.html
