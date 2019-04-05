@@ -16,12 +16,20 @@ print "Contours Count:", len(contours)
 contImg = im
 hullImg = imgray
 for i in range(0, 3):
+
+    # Get contour moments
     cMoments = cv.moments(contours[i])
+    # Get Contour length
+    cLength = ("Length: %.2f" % int(cv.arcLength(contours[i], False)))
+
+    # Find contour center point
     cPos = (int(cMoments['m10']/cMoments['m00']), int(cMoments['m01']/cMoments['m00']))
 
+    # draw contours and caption
     contImg = cv.drawContours(contImg, contours, i, (0, 255, 0), 2)
-    contImg = cv.putText(contImg, str(i), cPos, cv.FONT_HERSHEY_PLAIN, 2, (255, 255, 255), 2)
+    contImg = cv.putText(contImg, str(cLength), cPos, cv.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
 
+    # Draw Simplified Contours
     epsilon = 0.01 * cv.arcLength(contours[i], True)
     approx = cv.approxPolyDP(contours[i], epsilon, True)
     hullImg = cv.drawContours(hullImg, [approx], -1, (255, 255, 255), 2)
