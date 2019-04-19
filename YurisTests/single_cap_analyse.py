@@ -5,19 +5,19 @@ import cv2 as cv
 
 
 # im = cv.imread('data/caps_cropped.png')
-im = cv.imread('data/caps_cropped.png')
+im = cv.imread('data/single_cap.png')
 imgray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
 
-# Split to channels
-B, G, R = cv.split(im)
-cv.imshow("Red", R)
-cv.imshow("Green", G)
-cv.imshow("Blue", B)
-cv.waitKey(0)
-cv.destroyAllWindows()
+# # Split to channels
+# B, G, R = cv.split(im)
+# cv.imshow("Red", R)
+# cv.imshow("Green", G)
+# cv.imshow("Blue", B)
+# cv.waitKey(0)
+# cv.destroyAllWindows()
 
 # Apply Threshold
-ret, thresh = cv.threshold(imgray, 100, 255, cv.THRESH_BINARY_INV)
+ret, thresh = cv.threshold(imgray, 90, 255, cv.THRESH_BINARY_INV)
 # Find contours
 contours, hierarchy = cv.findContours(thresh, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
 contours = sorted(contours, key=cv.contourArea, reverse=True)
@@ -25,13 +25,13 @@ print("Contours Count:", len(contours))
 
 contImg = im
 hullImg = imgray
-for i in range(0, 3):
+for i in range(0, 1):
 
     # Get contour moments
     cMoments = cv.moments(contours[i])
 
     # Get Contour length
-    cLength = ("Length: %.2f" % int(cv.arcLength(contours[i], False)))
+    cLength = ("L: %.2f" % int(cv.arcLength(contours[i], False)))
 
     # Find contour center point
     cPos = (int(cMoments['m10']/cMoments['m00']), int(cMoments['m01']/cMoments['m00']))
