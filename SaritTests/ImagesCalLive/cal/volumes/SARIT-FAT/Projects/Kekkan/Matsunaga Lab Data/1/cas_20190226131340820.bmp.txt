@@ -1,0 +1,9 @@
+contrast 0.35
+useBrightness false
+brightnessValue 0
+threshold 75
+useAdaptiveThreshold true
+thresholdBlockSize 241
+thresholdConstant 4
+blobSizeThreshold 141
+blurSize 1
