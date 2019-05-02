@@ -285,7 +285,7 @@ void parametersAnalysis() {
   avgWidth /= parametersData.size();
   avgDiameter /= parametersData.size();
   //  avgDensity /= parametersData.size(); // for desity - not avg rather the amount of all contours saturation.
-  if (calibrated && parametersPrintout) {
+  if ((calibrated && parametersPrintout) || (live && parametersPrintout)) {
     mappedLength = map(avgLength, minLength, maxLength, 0, 127);
     mappedWidth = map(avgWidth, minLength, maxLength, 0, 127);
     mappedDiameter = map(avgDiameter, minLength, maxLength, 0, 127);

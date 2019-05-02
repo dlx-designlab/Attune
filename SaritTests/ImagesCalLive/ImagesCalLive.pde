@@ -46,7 +46,7 @@ ArrayList<Blob> blobList;
 // Number of blobs detected over all time. Used to set IDs.
 int blobCount = 0;
 
-float pixels2um = 0.8;
+float pixels2um = 0.6184;
 float minLength = 12.6984127*pixels2um;
 float maxLength = 368.8740741*pixels2um;
 float minWidth = 3.720634921*pixels2um;
@@ -253,6 +253,10 @@ void draw() {
   // Draw
   if (microscope.available() == true) {
     microscope.read();
+    curImage = microscope.get(0, 0, imageWidth, imageHeight);
+    if (useROI) {
+      cropped = curImage.get(roiX, roiY, roiWidth, roiHeight);
+    }
     reCalculateDisplay();
     display = true;
   }
@@ -262,11 +266,7 @@ void draw() {
     translate(offset, 0);
     pushMatrix();
     scale(scaleView);
-    if (live) {
-      image(microscope, 0, 0);
-    } else {
-      image(curImage, 0, 0);
-    }
+    image(curImage, 0, 0);
     popMatrix();
     popMatrix();
   }
@@ -289,9 +289,6 @@ void draw() {
     translate(offset, 0);
     pushMatrix();
     scale(scaleView);
-    /*   if (live) {
-     image(microscope, 0, 0);
-     }*/
     translate(src.width, src.height);
     displayContours();
     displayContoursBoundingBoxes();
@@ -308,21 +305,13 @@ void draw() {
 void processOpenCV() {
   pg.beginDraw();
   if (useROI) {
-    if (live) {
-      opencv.loadImage(microscope);
-    } else {
-      opencv.loadImage(curImage);
-    }
+    opencv.loadImage(curImage);
     opencv.setROI(roiX, roiY, roiWidth, roiHeight);
     /*    pg.image(cropped, 0, 0);
      img = pg.get();
      opencv = new OpenCV(this, img);*/
   } else {
-    if (live) {
-      pg.image(microscope, 0, 0);
-    } else {
-      pg.image(curImage, 0, 0);
-    }
+    pg.image(curImage, 0, 0);
     img = pg.get();
     opencv.loadImage(img); 
     straightLineNum = 0;
@@ -366,7 +355,7 @@ void processOpenCV() {
     if (thresholdBlockSize%2 == 0) thresholdBlockSize++;
     if (thresholdBlockSize < 3) thresholdBlockSize = 3;
 
-    opencv.adaptiveThreshold(thresholdBlockSize, thresholdConstant);// maybe 150
+    opencv.adaptiveThreshold(thresholdBlockSize, thresholdConstant);
 
     // Basic threshold - range [0, 255]
   } else {
@@ -485,13 +474,9 @@ void displayImages() {
   scale(scaleView);
   if (useROI) {
     image(cropped, 0, 0);
-  } else if (live) {
-    image(microscope, 0, 0);
   } else {
-    //  if (!live)
     image(curImage, 0, 0);
   }
-  //  }
   if (display) {
     image(preProcessedImage, src.width, 0);
     image(processedImage, 0, src.height);
@@ -809,11 +794,8 @@ void mouseReleased() {
     noStroke();
     roiWidth = (int)(w / scaleView);
     roiHeight = (int)(h / scaleView);
-    if (live) {
-      cropped = microscope.get(roiX, roiY, roiWidth, roiHeight);
-    } else {
-      cropped = curImage.get(roiX, roiY, roiWidth, roiHeight);
-    }
+    cropped = curImage.get(roiX, roiY, roiWidth, roiHeight);
+
     drawRoi = false;
     useROI = true;
     float t = (width-offset)/2;
