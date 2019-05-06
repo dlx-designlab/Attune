@@ -10,6 +10,13 @@ print 'openCV version: ', cv.__version__
 # im = cv.imread('data/caps_cropped.png')
 im = cv.imread('data/single_cap.png')
 
+# Filtering Caps by Hue
+# imgHSV = cv.cvtColor(im, cv.COLOR_BGR2HSV);
+# lower_col = np.array([200, 50, 60])
+# upper_col = np.array([312, 100, 50])
+# rangeMask = cv.inRange(imgHSV, lower_col, upper_col)
+
+
 # Smoothing
 # smoothed1 = cv.medianBlur(im, 5)
 # smoothed2 = cv.bilateralFilter(im, 5, 10, 100)
@@ -24,7 +31,7 @@ edged = cv.Canny(smoothed3, 40, 60)
 imgray = cv.cvtColor(smoothed3, cv.COLOR_BGR2GRAY)
 
 # Apply Threshold
-ret, thresh = cv.threshold(imgray, 90, 255, cv.THRESH_BINARY_INV)
+ret, thresh = cv.threshold(imgray, 85, 255, cv.THRESH_BINARY_INV)
 
 # Show Results
 cv.imshow('Original Color', im)
@@ -34,6 +41,7 @@ cv.imshow('Smoothed3', smoothed3)
 cv.imshow('Smoothed Grey', imgray)
 cv.imshow('Threshed', thresh)
 cv.imshow('Canny Edges', edged)
+# cv.imshow('Range Mask', rangeMask)
 cv.waitKey(0)
 cv.destroyAllWindows()
 
@@ -59,7 +67,7 @@ for i in range(0, len(contours)):
     cLength = cv.arcLength(contours[i], True)
 
     # Process only long contours
-    if cLength > 300:
+    if cLength > 5:
 
         # Get Area and calculate average diameter
         cArea = cv.contourArea(contours[i])
