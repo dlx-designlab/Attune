@@ -17,6 +17,8 @@ import processing.video.*;
 import controlP5.*;
 import java.util.Date;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.Point;
 
 OpenCV opencv;
 Capture microscope;
@@ -36,6 +38,7 @@ int imageHeight = 0;
 PImage src, preProcessedImage, processedImage, contoursImage, g, s;
 ArrayList<Contour> contours;
 ArrayList<Parameters> parametersData;
+double densityPerFrame = 0;
 ArrayList<Contour> contoursDst;
 ArrayList<Line> linesData;
 int straightLineNum = 0;
@@ -142,16 +145,16 @@ void setup() {
 
   String[] cameras = Capture.list();
 
-  if (cameras == null) {
+  if (cameras.length <= 15) {
     println("Failed to retrieve the list of available cameras, will try the default...");
     //    microscope = new Capture(this, 640, 480);
     initImage();
     reCalculateDisplay();
-  } 
-  if (cameras.length == 0) {
-    println("There are no cameras available for capture.");
-    exit();
   } else {
+    /*  if (cameras.length == 0) {
+     println("There are no cameras available for capture.");
+     exit();
+     } else {*/
     println("Available cameras:");
     printArray(cameras);
 
@@ -251,15 +254,17 @@ void loadCalData() {
 
 void draw() {
   // Draw
-  if (microscope.available() == true) {
-    microscope.read();
-    curImage = microscope.get(0, 0, imageWidth, imageHeight);
-    if (useROI) {
-      cropped = curImage.get(roiX, roiY, roiWidth, roiHeight);
+  if (live) {
+    if (microscope.available() == true) {
+      microscope.read();
+      curImage = microscope.get(0, 0, imageWidth, imageHeight);
+      if (useROI) {
+        cropped = curImage.get(roiX, roiY, roiWidth, roiHeight);
+      }
+      reCalculateDisplay();
+      display = true;
     }
-    reCalculateDisplay();
-    display = true;
-  }
+  } 
 
   if (drawRoi) {
     pushMatrix();
@@ -290,8 +295,11 @@ void draw() {
     pushMatrix();
     scale(scaleView);
     translate(src.width, src.height);
+    if (!live ) {
+      image(src, 0, 0);
+    }
     displayContours();
-    displayContoursBoundingBoxes();
+//    displayContoursBoundingBoxes();
     //    displayBlobs();
     //       displayLines();
     popMatrix();
@@ -752,7 +760,7 @@ void keyPressed() {
     opencv.releaseROI();
     int h = height/2;
     scaleView = (float)h/imageHeight;
-    blobSizeThreshold = int(177*pixels2um);
+    blobSizeThreshold = int(115*pixels2um);
     cp5.getController("blobSizeThreshold").setValue(blobSizeThreshold);
     reCalculateDisplay();
   }

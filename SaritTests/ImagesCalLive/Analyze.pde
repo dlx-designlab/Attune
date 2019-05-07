@@ -1,55 +1,58 @@
 void displayContours() {
 
   parametersData = new ArrayList<Parameters>();
-
+  densityPerFrame = 0;
   for (int i=0; i<contours.size(); i++) {
 
     Contour contour = contours.get(i);
-    //    double factor = contour.getPolygonApproximationFactor();
-    //    println("factor = ", factor);
-    //   contour.setPolygonApproximationFactor(0.9);
-    //   contour = contour.getPolygonApproximation();
 
     noFill();
     stroke(0, 255, 0);
     strokeWeight(1);
     contour.draw();
-    Contour convexHullCuntor = contour.getConvexHull();
+/*    Contour convexHullCuntor = contour.getConvexHull();
     stroke(0, 0, 255);
-    convexHullCuntor.draw();
-    float contourArea = 0;
-    contourArea = contour.area();
+    convexHullCuntor.draw();*/
     Rectangle r = contour.getBoundingBox();
-//    double contourSat = getSaturation(r);
-
-
-    if (//(contour.area() > 0.9 * src.width * src.height) ||
-      (/*r.width < blobSizeThreshold ||*/ r.height < blobSizeThreshold))
-      continue;
 
     stroke(255, 0, 0);
-    /*    beginShape();
-     for (PVector point : contour.getConvexhull().getPoints()) {
-     vertex(point.x, point.y);
-     }
-     endShape();*/
+    fill(255, 0, 0, 100);
+    strokeWeight(1);
+    rect(r.x, r.y, r.width, r.height);    
+    double contourSat = getSaturation(r);
+    float contourArea = 0;
+    contourArea = contour.area();
+    densityPerFrame += contourArea;
 
-    /*    stroke(255, 0, 0);
-     fill(255, 0, 0, 150);
-     strokeWeight(2);*/
-    //    rect(r.x, r.y, r.width, r.height);
+    if (//(contour.area() > 0.9 * src.width * src.height) ||
+      (/*r.width < minWidth && */r.height < blobSizeThreshold))
+      continue;
+
+    Point[] cPoints = new Point[contour.numPoints()];
+    ArrayList <PVector> cPointsList;
+    cPointsList = contour.getPoints();
+    for (int j=0;j<contour.numPoints();j++) {
+      cPoints[j] = new Point();
+      cPoints[j].x = cPointsList.get(j).x;
+      cPoints[j].y = cPointsList.get(j).y;
+    }
+    MatOfPoint2f mat = new MatOfPoint2f();
+    mat.fromArray(cPoints);
+    double cLen = Imgproc.arcLength(mat, true);
+//    float contourArea = 0;
+    double area = Imgproc.contourArea(mat);
+ //   contourArea = contour.area();
+
     Parameters contourParameters = new Parameters();
     contourParameters.pLength = r.height;
-    contourParameters.pWidth = r.width;
- //   contourParameters.pDensity = (float)contourSat; // check that is not chopped
+    contourParameters.pDiameter = area/(cLen/2);
+    contourParameters.pWidth = (r.width-(contourParameters.pDiameter*2))/2;
+//    contourParameters.pDensity = area; //contourSat;
     parametersData.add(contourParameters);
-
-    /*    int RL = calculateLength(contour);
-     if (calibrated && parametersPrintout) {
-     println("contour " + i + " vertexs " + contour.numPoints() + " area " + contourArea + " saturation " + contourSat + " RL " + RL);
-     }*/
   }
-  parametersAnalysis();
+  if (parametersData.size()>0) {
+    parametersAnalysis();
+  }
 }
 
 void displayContoursBoundingBoxes() {
@@ -60,7 +63,7 @@ void displayContoursBoundingBoxes() {
     Rectangle r = contour.getBoundingBox();
 
     if (//(contour.area() > 0.9 * src.width * src.height) ||
-      (/*r.width < blobSizeThreshold ||*/ r.height < blobSizeThreshold))
+      (r.width < minWidth || r.height < blobSizeThreshold))
       continue;
 
     stroke(255, 0, 0);
@@ -72,22 +75,17 @@ void displayContoursBoundingBoxes() {
 
 double getSaturation(Rectangle tempRect) {
   double saturationValue = 0;
-  if (live) {
-    microscope.loadPixels();
-  } else {
-    curImage.loadPixels();
-  }
+  curImage.loadPixels();
   for (int x = tempRect.x; x < tempRect.x+tempRect.width; x++) {
     for (int y = tempRect.y; y< tempRect.y+tempRect.height; y++) {
-      if (x+y*height < curImage.pixels.length) {
-        saturationValue += saturation(curImage.pixels[x+y*height]);
+//      if (x+y*curImage.width < curImage.pixels.length) {
+        saturationValue += saturation(curImage.pixels[x+y*curImage.width]);
         //      saturationValue += red(src.pixels[x+y*]);
-      }
+    //  }
     }
   }
   saturationValue /= tempRect.width*tempRect.height;
   return saturationValue;
-  //  myImage.updatePixels();
 }
 
 ////////////////////
@@ -265,10 +263,10 @@ int calculateLength (Contour c) {
 }
 
 void parametersAnalysis() {
-  float avgLength = 0;
-  float avgWidth = 0;
-  float avgDiameter = 0;
-  float avgDensity = 0;
+  double avgLength = 0;
+  double avgWidth = 0;
+  double avgDiameter = 0;
+  double avgDensity = 0;
   float mappedLength = 0;
   float mappedWidth = 0;
   float mappedDiameter = 0;
@@ -279,27 +277,45 @@ void parametersAnalysis() {
     avgLength += par.pLength;
     avgWidth += par.pWidth;
     avgDiameter += par.pDiameter;
-    avgDensity += par.pDensity;
+//    avgDensity += par.pDensity;
   }
   avgLength /= parametersData.size();
   avgWidth /= parametersData.size();
   avgDiameter /= parametersData.size();
-  //  avgDensity /= parametersData.size(); // for desity - not avg rather the amount of all contours saturation.
+  if (useROI) {
+    avgDensity = (roiWidth*roiHeight)/densityPerFrame; 
+  } else {
+    avgDensity =  (curImage.width*curImage.height)/densityPerFrame; 
+  }
   if ((calibrated && parametersPrintout) || (live && parametersPrintout)) {
-    mappedLength = map(avgLength, minLength, maxLength, 0, 127);
-    mappedWidth = map(avgWidth, minLength, maxLength, 0, 127);
-    mappedDiameter = map(avgDiameter, minLength, maxLength, 0, 127);
-    mappedDensity = map(avgDensity, minLength, maxLength, 0, 127);
-    println("length " + mappedLength + " width " + mappedWidth + " diameter " + mappedDiameter + " density " + mappedDensity);
+    mappedLength = map((float)avgLength, minLength, maxLength, 0, 127);
+    mappedLength = constrain(mappedLength, 0, 127);
+    mappedWidth = map((float)avgWidth, minWidth, maxWidth, 0, 127);
+    mappedWidth = constrain(mappedWidth, 0, 127);
+    mappedDiameter = map((float)avgDiameter, minDiameter, maxDiameter, 0, 127);
+    mappedDiameter = constrain(mappedDiameter, 0, 127);
+    mappedDensity = map((float)avgDensity, minDensity, maxDensity, 0, 127);
+    println("no of cap. " + parametersData.size() + " avg length " + avgLength + " avg width " + avgWidth + " avg diameter " + avgDiameter + " avg density " + avgDensity);
+    println("snd length " + mappedLength + " snd width " + mappedWidth + " snd diameter " + mappedDiameter + " snd density " + mappedDensity);
     parametersPrintout = false;
+    saveFrame("frame-######.png");
   }
 }
 
+float getDiameter(Contour contour, Rectangle r) {
+  int tmpX = int(r.x);
+  int tmpY = int(r.y+r.height-1);
+  while (!contour.containsPoint(tmpX, tmpY) && (tmpY > r.y)) {
+    tmpY--;
+  }  
+  return (tmpY-r.y);
+}
+
 class Parameters {
-  float pLength;
-  float pWidth;
-  float pDiameter;
-  float pDensity;
+  double pLength;
+  double pWidth;
+  double pDiameter;
+  double pDensity;
 
   Parameters() {
     pLength = 0;
