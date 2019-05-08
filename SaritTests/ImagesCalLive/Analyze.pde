@@ -10,15 +10,15 @@ void displayContours() {
     stroke(0, 255, 0);
     strokeWeight(1);
     contour.draw();
-/*    Contour convexHullCuntor = contour.getConvexHull();
-    stroke(0, 0, 255);
-    convexHullCuntor.draw();*/
+    /*    Contour convexHullCuntor = contour.getConvexHull();
+     stroke(0, 0, 255);
+     convexHullCuntor.draw();*/
     Rectangle r = contour.getBoundingBox();
 
     stroke(255, 0, 0);
     fill(255, 0, 0, 100);
     strokeWeight(1);
-    rect(r.x, r.y, r.width, r.height);    
+//    rect(r.x, r.y, r.width, r.height);    
     double contourSat = getSaturation(r);
     float contourArea = 0;
     contourArea = contour.area();
@@ -31,7 +31,7 @@ void displayContours() {
     Point[] cPoints = new Point[contour.numPoints()];
     ArrayList <PVector> cPointsList;
     cPointsList = contour.getPoints();
-    for (int j=0;j<contour.numPoints();j++) {
+    for (int j=0; j<contour.numPoints(); j++) {
       cPoints[j] = new Point();
       cPoints[j].x = cPointsList.get(j).x;
       cPoints[j].y = cPointsList.get(j).y;
@@ -39,15 +39,30 @@ void displayContours() {
     MatOfPoint2f mat = new MatOfPoint2f();
     mat.fromArray(cPoints);
     double cLen = Imgproc.arcLength(mat, true);
-//    float contourArea = 0;
     double area = Imgproc.contourArea(mat);
- //   contourArea = contour.area();
+    RotatedRect minRect = new RotatedRect();
+    minRect = Imgproc.minAreaRect(mat);
+    Point[] rectPoints = new Point[4];
+    minRect.points(rectPoints);
+    beginShape();
+    vertex((float)rectPoints[0].x, (float)rectPoints[0].y);
+    vertex((float)rectPoints[1].x, (float)rectPoints[1].y);
+    vertex((float)rectPoints[2].x, (float)rectPoints[2].y);
+    vertex((float)rectPoints[3].x, (float)rectPoints[3].y);
+    endShape(CLOSE);
+    double brHeight = dist((float)rectPoints[1].x, (float)rectPoints[1].y, (float)rectPoints[2].x, (float)rectPoints[2].y); 
+    double brWidth = dist((float)rectPoints[2].x, (float)rectPoints[2].y, (float)rectPoints[3].x, (float)rectPoints[3].y); 
+    if (brWidth > brHeight) {
+      double temp = brHeight;
+      brHeight = brWidth;
+      brWidth = temp;
+    }
 
     Parameters contourParameters = new Parameters();
-    contourParameters.pLength = r.height;
+    contourParameters.pLength = brHeight;//r.height;
     contourParameters.pDiameter = area/(cLen/2);
-    contourParameters.pWidth = (r.width-(contourParameters.pDiameter*2))/2;
-//    contourParameters.pDensity = area; //contourSat;
+    contourParameters.pWidth = (brWidth-(contourParameters.pDiameter*2))/2;
+    //    contourParameters.pDensity = area; //contourSat;
     parametersData.add(contourParameters);
   }
   if (parametersData.size()>0) {
@@ -78,10 +93,10 @@ double getSaturation(Rectangle tempRect) {
   curImage.loadPixels();
   for (int x = tempRect.x; x < tempRect.x+tempRect.width; x++) {
     for (int y = tempRect.y; y< tempRect.y+tempRect.height; y++) {
-//      if (x+y*curImage.width < curImage.pixels.length) {
-        saturationValue += saturation(curImage.pixels[x+y*curImage.width]);
-        //      saturationValue += red(src.pixels[x+y*]);
-    //  }
+      //      if (x+y*curImage.width < curImage.pixels.length) {
+      saturationValue += saturation(curImage.pixels[x+y*curImage.width]);
+      //      saturationValue += red(src.pixels[x+y*]);
+      //  }
     }
   }
   saturationValue /= tempRect.width*tempRect.height;
@@ -277,15 +292,15 @@ void parametersAnalysis() {
     avgLength += par.pLength;
     avgWidth += par.pWidth;
     avgDiameter += par.pDiameter;
-//    avgDensity += par.pDensity;
+    //    avgDensity += par.pDensity;
   }
   avgLength /= parametersData.size();
   avgWidth /= parametersData.size();
   avgDiameter /= parametersData.size();
   if (useROI) {
-    avgDensity = (roiWidth*roiHeight)/densityPerFrame; 
+    avgDensity = (roiWidth*roiHeight)/densityPerFrame;
   } else {
-    avgDensity =  (curImage.width*curImage.height)/densityPerFrame; 
+    avgDensity =  (curImage.width*curImage.height)/densityPerFrame;
   }
   if ((calibrated && parametersPrintout) || (live && parametersPrintout)) {
     mappedLength = map((float)avgLength, minLength, maxLength, 0, 127);
@@ -323,4 +338,16 @@ class Parameters {
     pDiameter = 0;
     pDensity = 0;
   }
+}
+
+
+Rectangle boundingRect(Point[] rPoints)
+{
+  Rectangle r = new Rectangle((int) Math.floor(Math.min(Math.min(Math.min(rPoints[0].x, rPoints[1].x), rPoints[2].x), rPoints[3].x)),
+      (int) Math.floor(Math.min(Math.min(Math.min(rPoints[0].y, rPoints[1].y), rPoints[2].y), rPoints[3].y)),
+      (int) Math.ceil(Math.max(Math.max(Math.max(rPoints[0].x, rPoints[1].x), rPoints[2].x), rPoints[3].x)),
+      (int) Math.ceil(Math.max(Math.max(Math.max(rPoints[0].y, rPoints[1].y), rPoints[2].y), rPoints[3].y)));
+  r.width -= r.x - 1;
+  r.height -= r.y - 1;
+  return r;
 }

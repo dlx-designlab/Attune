@@ -19,6 +19,7 @@ import java.util.Date;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
+import org.opencv.core.RotatedRect;
 
 OpenCV opencv;
 Capture microscope;
