@@ -31,7 +31,7 @@ edged = cv.Canny(smoothed3, 40, 60)
 imgray = cv.cvtColor(smoothed3, cv.COLOR_BGR2GRAY)
 
 # Apply Threshold
-ret, thresh = cv.threshold(imgray, 85, 255, cv.THRESH_BINARY_INV)
+ret, thresh = cv.threshold(imgray, 95, 255, cv.THRESH_BINARY_INV)
 
 # Show Results
 cv.imshow('Original Color', im)
