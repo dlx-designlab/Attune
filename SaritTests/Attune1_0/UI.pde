@@ -3,43 +3,41 @@
 //////////////////////////
 
 void initControls(String[] cams) {
-  
-//  PFont pfont = createFont("ArialNarrow", 10, true);
-//  println(PFont.list());
-  
-//  ControlFont font = new ControlFont(pfont,241);
+
+  PFont pfont = createFont("ArialNarrow", 20, true);
+  //  println(PFont.list());
 
   ddlCameras = cp5.addDropdownList("cameras")
     .setPosition(20, 420)
     .setSize(240, 100)
-//    .setFont(pfont)
+    //    .setFont(pfont)
     ;
 
   customizeCamerasDdl(ddlCameras, cams); // customize the first list
 
   cp5.addButton("Start")
     .setValue(100)
-    .setPosition(20, 20)
-    .setSize(100, 30)
+    .setPosition(20, 40)
+    .setSize(100, 50)
     .setColorLabel(100)
-//    .setUpper(false);
-//    .setFont(pfont)
+    //    .setUpper(false);
+    .setFont(pfont)
     //    .hide()
     ;
 
-  
+
   cp5.addTextfield("ID")
-    .setPosition(20, 60)
-    .setSize(100, 30)
+    .setPosition(20, 100)
+    .setSize(140, 60)
     .setAutoClear(false)
     .setFocus(true)
-//    .setFont(pfont)
+    .setFont(pfont)
     ;
   cp5.addBang("clear")
-    .setPosition(130, 60)
-    .setSize(40, 30)
+    .setPosition(170, 100)
+    .setSize(100, 60)
     .getCaptionLabel().align(ControlP5.CENTER, ControlP5.CENTER)
-//    .setFont(pfont)
+    .setFont(pfont)
     ;    
 
   cTimer = new ControlTimer();
@@ -48,7 +46,11 @@ void initControls(String[] cams) {
   timerText.setPosition(20, 360);
   messageText = new Textlabel(cp5, "  ", 100, 100);
   messageText.setPosition(20, 380);
-//  messageText.setColorValue(color(255,0,0));
+  //  messageText.setColorValue(color(255,0,0));
+  messageText.setFont(pfont);
+  frameText = new Textlabel(cp5, "  ", 100, 100);
+  frameText.setPosition(10, 10);
+//  frameText.setFont
 //  textFont(pfont);
 }
 
@@ -92,7 +94,7 @@ public void startNewSession() {
   saveFrame(sessionFolder+"#1-"+cTimer.millis()+".png");
   if (live) {
     curState = NEW_SESSION;
-    messageText.setValue("Press R/r to START and STOP Recording");
+    messageText.setValue("Press R/r to RECORD");
     cTimer.reset();
     available = false;
   } else {
@@ -130,14 +132,10 @@ void keyPressed() {
   if (key == 'r' || key == 'R') {
     if (curState == NEW_SESSION || curState == PROCESS_SESSION) {
       curState = RECORD_SESSION;
-      messageText.setValue("Recording... Press R/r to STOP");
+      messageText.setValue("Recording...");
       videoExport = new VideoExport(this, sessionFolder+cTimer.millis()+".mp4", microscope);
       videoExport.startMovie();
-    } else if (curState == RECORD_SESSION) {
-      curState = PROCESS_SESSION;
-      //      messageText.setValue("Press R/r to Start new recording");
-      messageText.setValue("Use arrows to MOVE FRAME; s/S to SET FRAME");
-      videoExport.endMovie();
+      startRecordingTime = millis();
     }
   }
 
@@ -153,27 +151,58 @@ void keyPressed() {
     }
   }
 
-  if (key == CODED) {
-    if (keyCode == UP) {
-      if (roiY > 0) {
-        roiY -= 10;
+  if (curState == PROCESS_SESSION) {
+    if (key == CODED) {
+      if (keyCode == UP) {
+        if (roiY > 0) {
+          roiY -= moveFramePixels;
+        }
+      }
+      if (keyCode == DOWN) {
+        if (roiY < inImageHeight/2) {
+          roiY += moveFramePixels;
+        }
+      }
+      if (keyCode == LEFT) {
+        if (roiX > 0) {
+          roiX -= moveFramePixels;
+        }
+      }
+      if (keyCode == RIGHT) {
+        if (roiX < inImageWidth/2) {
+          roiX += moveFramePixels;
+        }
       }
     }
-    if (keyCode == DOWN) {
-      if (roiY < inImageHeight/2) {
-        roiY += 10;
-      }
+  }
+}
+
+void mousePressed() {
+  if (curState == PROCESS_SESSION) {
+    if (mouseX > roiX + offset && mouseX < roiX + roiWidth*scaleView + offset) {
+      movingRoi = true;
+      tmpRoiX = mouseX - moveFramePixels - offset;
+      tmpRoiY = mouseY - moveFramePixels;
     }
-    if (keyCode == LEFT) {
-      if (roiX > 0) {
-        roiX -= 10;
-      }
+  }
+}
+
+void mouseDragged() {
+  if (movingRoi) {
+    if (tmpRoiX >= moveFramePixels && tmpRoiX <= inImageWidth-roiWidth*scaleView+moveFramePixels) {
+      tmpRoiX = mouseX - moveFramePixels - offset;
     }
-    if (keyCode == RIGHT) {
-      if (roiX < inImageWidth/2) {
-        roiX += 10;
-      }
+    if (tmpRoiY >= moveFramePixels && tmpRoiY <= inImageHeight-roiHeight*scaleView+moveFramePixels) {
+      tmpRoiY = mouseY - moveFramePixels;
     }
+  }
+}
+
+void mouseReleased() {
+  if (movingRoi) {
+    movingRoi = false;
+    roiX = tmpRoiX;
+    roiY = tmpRoiY;
   }
 }
 
@@ -218,7 +247,7 @@ void createQRCode(float mL, float mW, float mDi, float mDe) {
   try {
     QRCode = zxing4p.generateQRCode(textToEncode, 600, 600);
     QRCode.save(sessionFolder+sessionID+".gif");
-    QRCode = loadImage(sessionFolder+sessionID+".gif");
+    QRCode = loadImage(sessionFolder+sessionID+cTimer.millis()+".gif");
   } 
   catch (Exception e) {  
     println("Exception: "+e);

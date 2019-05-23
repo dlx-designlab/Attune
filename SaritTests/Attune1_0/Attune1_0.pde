@@ -23,6 +23,7 @@ DropdownList ddlCameras;
 ControlTimer cTimer;
 Textlabel timerText;
 Textlabel messageText;
+Textlabel frameText;
 
 String[] cameras;
 String camName;
@@ -59,6 +60,8 @@ float maxDensity = 21.8*pixels2um;
 float thresholdLength = 115;
 int roiX = 0;
 int roiY = 0;
+int tmpRoiX = 0;
+int tmpRoiY = 0;
 int roiWidth = 0;
 int roiHeight = 0;
 int prevRoiX;
@@ -72,6 +75,11 @@ int thresholdBlockSize = 151;//241;
 int thresholdConstant = 5;
 int blobSizeThreshold = int(thresholdLength*pixels2um);
 int blurSize = 0;//4
+int moveFramePixels = 10;
+
+int startRecordingTime = 0;
+int timeToRecord = 6000; //6seconds
+boolean movingRoi = false;
 
 // STATES
 int NO_STATE = 999;
@@ -137,10 +145,20 @@ void draw() {
       stroke(255, 0, 0);
       strokeWeight(2);
       strokeJoin(ROUND);
-      rect(roiX, roiY, roiWidth, roiHeight);
+      if (movingRoi) {
+        rect(tmpRoiX, tmpRoiY, roiWidth, roiHeight);
+      } else {
+        rect(roiX, roiY, roiWidth, roiHeight);
+      }
     }
     if (curState == PROCESS_SESSION) {
       displayContours();
+
+//      if ((frameCount % 50)/ (float)50 == 0) {
+      if (frameCount%10 == 0) {
+        messageText.setValue("Use arrows & mouse to MOVE FRAME");
+      } else 
+        messageText.setValue("Press s/S to SET FRAME");
     }
     popMatrix();
     popMatrix();
@@ -149,14 +167,26 @@ void draw() {
   timerText.setValue(cTimer.toString());
   timerText.draw(this);
   messageText.draw(this);
+  frameText.setValue(str(frameRate));
+  frameText.draw(this);
   if (curState == RECORD_SESSION) {
+    if (frameCount%2 == 0) {
+      fill(255, 0, 0);
+      noStroke();
+      ellipse(offset + 40, 40, 40, 40);
+    }
     videoExport.saveFrame();
   }
 
-  text(frameRate, 10, 10);
+//  text(frameRate, 10, 10);
 
   //  text(cp5.get(Textfield.class,"ID").getText(), 360,130);
   //  text(sessionID, 360,180);
+
+  if (curState == RECORD_SESSION && (millis() - startRecordingTime > timeToRecord)) {
+    curState = PROCESS_SESSION;
+    videoExport.endMovie();
+  }
 }
 
 
