@@ -24,7 +24,7 @@ DropdownList ddlCameras;
 ControlTimer cTimer;
 Textlabel timerText;
 Textlabel messageText;
-Textlabel frameText;
+//Textlabel frameText;
 
 String[] cameras;
 String camName;
@@ -44,7 +44,7 @@ PImage curImage;
 PImage croppedImage;
 PImage img;
 PImage src, preProcessedImage, processedImage, contoursImage, g, s;
-int offset = 300;
+int offset = 130;
 String curCam;
 String sessionID = "";
 String sessionFolder = "";
@@ -91,7 +91,9 @@ int QR_SESSION =3;
 int curState = NO_STATE;
 
 void setup() {
-  size(1260, 540);
+  size(2050, 1080); //960+130 1090
+//  size(1090, 540); //960+130 1090
+  // fullScreen();
   String initFileName = "init.txt";  
   String[] lines = loadStrings(initFileName);
   if (lines != null) {
@@ -116,6 +118,10 @@ void draw() {
   if (live) {
     if (microscope.available() == true) {
       microscope.read();
+      if (curState == RECORD_SESSION) {
+        videoExport.saveFrame();
+//         thread("recordFrame");
+      }
       curImage = microscope.get(0, 0, inImageWidth, inImageHeight);
       if (useROI) {
         croppedImage = curImage.get(roiX, roiY, roiWidth, roiHeight);
@@ -126,7 +132,7 @@ void draw() {
       display = true;
     }
   }
-  if (display/* && curState != RECORD_SESSION*/) {
+  if (display) {
     pushMatrix();
     translate(offset, 0);
     pushMatrix();
@@ -155,31 +161,19 @@ void draw() {
     if (curState == PROCESS_SESSION) {
       displayContours();
 
-//      if ((frameCount % 50)/ (float)50 == 0) {
+      //      if ((frameCount % 50)/ (float)50 == 0) {
       if (frameCount%10 == 0) {
         messageText.setValue("Use arrows & mouse to MOVE FRAME");
       } else 
-        messageText.setValue("Press s/S to SET FRAME");
+      messageText.setValue("Press s/S to SET FRAME");
     }
     popMatrix();
     popMatrix();
   }
 
-  timerText.setValue(cTimer.toString());
-  timerText.draw(this);
-  messageText.draw(this);
-  frameText.setValue(str(frameRate));
-  frameText.draw(this);
-  if (curState == RECORD_SESSION) {
-    if (frameCount%2 == 0) {
-      fill(255, 0, 0);
-      noStroke();
-      ellipse(offset + 40, 40, 40, 40);
-    }
-    videoExport.saveFrame();
-  }
+  displayMessages();
 
-//  text(frameRate, 10, 10);
+  //  text(frameRate, 10, 10);
 
   //  text(cp5.get(Textfield.class,"ID").getText(), 360,130);
   //  text(sessionID, 360,180);
@@ -190,7 +184,24 @@ void draw() {
   }
 }
 
+void recordFrame() {
+  videoExport.saveFrame();
+}
 
+void displayMessages() {
+  timerText.setValue(cTimer.toString());
+  timerText.draw(this);
+  messageText.draw(this);
+  //frameText.setValue(str(frameRate));
+  //frameText.draw(this);
+  if (curState == RECORD_SESSION) {
+    if (frameCount%2 == 0) {
+      fill(255, 0, 0);
+      noStroke();
+      ellipse(offset + 40, 40, 40, 40);
+    }
+  }
+}
 
 
 void startMicroscopeImage() {
@@ -268,6 +279,6 @@ void setOpenCVFrame() {
     croppedImage = curImage.get(roiX, roiY, roiWidth, roiHeight);
     useROI = true;
     scaleView = (float)height/roiHeight;
-    blobSizeThreshold *= inImageHeight/roiHeight;
+    blobSizeThreshold /= scaleView;//inImageHeight/roiHeight;
   }
 }

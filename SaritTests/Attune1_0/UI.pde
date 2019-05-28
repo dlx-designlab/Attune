@@ -1,4 +1,4 @@
-////////////////////////// //<>//
+////////////////////////// //<>// //<>//
 // CONTROL P5 Functions
 //////////////////////////
 
@@ -8,7 +8,7 @@ void initControls(String[] cams) {
   //  println(PFont.list());
 
   ddlCameras = cp5.addDropdownList("cameras")
-    .setPosition(20, 420)
+    .setPosition(10, height-200) //900
     .setSize(240, 100)
     //    .setFont(pfont)
     ;
@@ -17,8 +17,8 @@ void initControls(String[] cams) {
 
   cp5.addButton("Start")
     .setValue(100)
-    .setPosition(20, 40)
-    .setSize(100, 50)
+    .setPosition(10, 40)
+    .setSize(90, 50)
     .setColorLabel(100)
     //    .setUpper(false);
     .setFont(pfont)
@@ -27,15 +27,16 @@ void initControls(String[] cams) {
 
 
   cp5.addTextfield("ID")
-    .setPosition(20, 100)
-    .setSize(140, 60)
+    .setPosition(10, 100)
+    .setSize(90, 60)
     .setAutoClear(false)
     .setFocus(true)
     .setFont(pfont)
     ;
   cp5.addBang("clear")
-    .setPosition(170, 100)
-    .setSize(100, 60)
+    .setPosition(10, 160)
+    //   .setPosition(170, 100)
+    .setSize(90, 40)
     .getCaptionLabel().align(ControlP5.CENTER, ControlP5.CENTER)
     .setFont(pfont)
     ;    
@@ -43,15 +44,17 @@ void initControls(String[] cams) {
   cTimer = new ControlTimer();
   cTimer.setSpeedOfTime(1);
   timerText = new Textlabel(cp5, "--", 100, 100);
-  timerText.setPosition(20, 360);
+  timerText.setPosition(10, 220);
   messageText = new Textlabel(cp5, "  ", 100, 100);
-  messageText.setPosition(20, 380);
+  messageText.setPosition(offset+20, 100);
   //  messageText.setColorValue(color(255,0,0));
   messageText.setFont(pfont);
-  frameText = new Textlabel(cp5, "  ", 100, 100);
-  frameText.setPosition(10, 10);
-//  frameText.setFont
-//  textFont(pfont);
+  //frameText = new Textlabel(cp5, "  ", 100, 100);
+  //frameText.setPosition(10, 10);
+  cp5.addFrameRate().setInterval(10).setPosition(0, height - 10);
+
+  //  frameText.setFont
+  //  textFont(pfont);
 }
 
 void customizeCamerasDdl(DropdownList ddl, String[] cams) {
@@ -83,7 +86,7 @@ void controlEvent(ControlEvent theEvent) {
 
       String[] tmpFps = split(curCamElements[2], "=");
       inFps = int(tmpFps[1]);
-      //      frameRate(inFps);
+      frameRate(inFps);
 
       startMicroscopeImage();
     }
@@ -134,6 +137,8 @@ void keyPressed() {
       curState = RECORD_SESSION;
       messageText.setValue("Recording...");
       videoExport = new VideoExport(this, sessionFolder+cTimer.millis()+".mp4", microscope);
+      videoExport.setFrameRate(inFps*0.6);  //assuming a drop of 60% of frames or frame rate
+        videoExport.setQuality(100, 128);//100% quality
       videoExport.startMovie();
       startRecordingTime = millis();
     }
@@ -148,6 +153,12 @@ void keyPressed() {
   if (key == 'm' || key == 'M') {
     if (curState == PROCESS_SESSION) {
       parametersToMusic = true;
+    }
+  }
+
+  if (key == 'o' || key == 'O') {
+    if (curState == PROCESS_SESSION) {
+      curState = NEW_SESSION;
     }
   }
 
@@ -240,7 +251,7 @@ void createQRCode(float mL, float mW, float mDi, float mDe) {
   String  textToEncode = "";
   String  link = "";
   String fullQRgifPath;
-  
+
 
   // example: www.servername.com/?uid=zx1234&cp=127|127|127|127
   // 1. density 2. diameter 3. width 4. length
@@ -258,7 +269,7 @@ void createQRCode(float mL, float mW, float mDi, float mDe) {
     println("Exception: "+e);
     QRCode = null;
   }
-  
+
   /*  String ts = timeStamp();
    saveFrame(dataPath("")+"/"+sessionID+ts+".gif");*/
 }
