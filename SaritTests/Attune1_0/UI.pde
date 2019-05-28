@@ -239,6 +239,8 @@ void createQRCode(float mL, float mW, float mDi, float mDe) {
   PImage  QRCode;
   String  textToEncode = "";
   String  link = "";
+  String fullQRgifPath;
+  
 
   // example: www.servername.com/?uid=zx1234&cp=127|127|127|127
   // 1. density 2. diameter 3. width 4. length
@@ -246,17 +248,17 @@ void createQRCode(float mL, float mW, float mDi, float mDe) {
 
   try {
     QRCode = zxing4p.generateQRCode(textToEncode, 100, 100);
-    QRCode.save(sessionFolder+sessionID+".gif");
-    QRCode = loadImage(sessionFolder+sessionID+cTimer.millis()+".gif");
+    fullQRgifPath = sessionFolder+sessionID+cTimer.millis()+".gif";
+    QRCode.save(fullQRgifPath);
+    QRCode = loadImage(fullQRgifPath);
+    String params[] = {"lpr", fullQRgifPath};
+    exec(params);
   } 
   catch (Exception e) {  
     println("Exception: "+e);
     QRCode = null;
   }
   
-  String fullQRgifPath = sessionFolder+sessionID+cTimer.millis()+".gif";
-  String params[] = {"lpr", fullQRgifPath};
-  exec(params);
   /*  String ts = timeStamp();
    saveFrame(dataPath("")+"/"+sessionID+ts+".gif");*/
 }
