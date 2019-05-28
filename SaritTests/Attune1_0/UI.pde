@@ -245,7 +245,7 @@ void createQRCode(float mL, float mW, float mDi, float mDe) {
   textToEncode = link + "/?uid=" + sessionID + "&cp=" + mDe + "|" + mDi + "|" + mW + "|" + mL;
 
   try {
-    QRCode = zxing4p.generateQRCode(textToEncode, 600, 600);
+    QRCode = zxing4p.generateQRCode(textToEncode, 100, 100);
     QRCode.save(sessionFolder+sessionID+".gif");
     QRCode = loadImage(sessionFolder+sessionID+cTimer.millis()+".gif");
   } 
@@ -253,6 +253,10 @@ void createQRCode(float mL, float mW, float mDi, float mDe) {
     println("Exception: "+e);
     QRCode = null;
   }
+  
+  String fullQRgifPath = sessionFolder+sessionID+cTimer.millis()+".gif";
+  String params[] = {"lpr", fullQRgifPath};
+  exec(params);
   /*  String ts = timeStamp();
    saveFrame(dataPath("")+"/"+sessionID+ts+".gif");*/
 }

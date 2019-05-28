@@ -13,6 +13,7 @@ import org.opencv.core.Point;
 import org.opencv.core.RotatedRect;
 import com.hamoid.*;
 import com.cage.zxing4p3.*;
+import java.io.InputStreamReader;
 
 // QR code
 ZXING4P zxing4p;
