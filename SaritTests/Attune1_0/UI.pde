@@ -137,6 +137,9 @@ public void Start() {
 }
 
 void closeSession() {
+  if (useROI) {
+    setOpenCVFrame();
+  }
   curState = NO_STATE;
   messageText.setValue("Enter uID to Start");
   freezeImage = false;
