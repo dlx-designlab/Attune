@@ -38,7 +38,7 @@ boolean live = false;
 boolean display = false;
 boolean available = false;
 boolean parametersToMusic = false;
-PGraphics pg;
+//PGraphics pg;
 float scaleView;
 PImage curImage;
 PImage croppedImage;
@@ -81,6 +81,11 @@ int moveFramePixels = 10;
 int startRecordingTime = 0;
 int timeToRecord = 6000; //6seconds
 boolean movingRoi = false;
+boolean freezeImage = false;
+int brightnessValue = 0;
+int pauseTime = 0;
+int onHoldTime = 60000;//10seconds
+boolean micStopped = false;
 
 // STATES
 int NO_STATE = 999;
@@ -113,30 +118,37 @@ void setup() {
 }
 
 void draw() {
-
   if (live) {
     if (microscope.available() == true) {
       background(128);
-      microscope.read();
-      if (curState == RECORD_SESSION) {
-        videoExport.saveFrame();
-        //         thread("recordFrame");
-      }
-      curImage = microscope.get(0, 0, inImageWidth, inImageHeight);
-      if (useROI) {
-        croppedImage = curImage.get(roiX, roiY, roiWidth, roiHeight);
-      }
-      if (curState == PROCESS_SESSION) {
-        processOpenCV();
+      if (!freezeImage) {
+        microscope.read();
+        if (curState == RECORD_SESSION) {
+          videoExport.saveFrame();
+          //         thread("recordFrame");
+        }
+        curImage = microscope.get(0, 0, inImageWidth, inImageHeight);
+        if (useROI) {
+          croppedImage = curImage.get(roiX, roiY, roiWidth, roiHeight);
+        }
+        if (curState == PROCESS_SESSION) {
+          processOpenCV();
+        }
       }
       displayImage();
       display = true;
     }
   }
-  displayMessages();
+  if (!micStopped) {
+    displayMessages();
+  }
   if (curState == RECORD_SESSION && (millis() - startRecordingTime > timeToRecord)) {
     curState = PROCESS_SESSION;
     videoExport.endMovie();
+  }
+  if (curState == NO_STATE && millis() - pauseTime > onHoldTime) {
+    microscope.stop();
+    micStopped = true;
   }
 }
 
@@ -151,9 +163,13 @@ void displayImage() {
   scale(scaleView);
   if (useROI) {
     image(croppedImage, 0, 0);
-    //     image(processedImage, 0, 0);
+         //image(g, 0, 0);
   } else {
+    //if (curState == PROCESS_SESSION) {
+    //image(g, 0, 0);
+    //} else {
     image(curImage, 0, 0);
+    //}
   }
   if (curState == PROCESS_SESSION) {
     if (!useROI) {
@@ -186,12 +202,18 @@ void displayMessages() {
     }
   }
   if (curState == PROCESS_SESSION) {
-
-    //      if ((frameCount % 50)/ (float)50 == 0) {
-    if (frameCount%10 == 0) {
-      messageText.setValue("Use arrows & mouse to MOVE FRAME");
-    } else 
-    messageText.setValue("Press s/S to SET FRAME");
+    if (freezeImage) {
+      messageText.setValue("Press f/F to UNFREEZE IMAGE");
+    } else {
+      //      if ((frameCount % 50)/ (float)50 == 0) {
+      if (frameCount%30 <10) {
+        messageText.setValue("Press f/F to FREEZE IMAGE");
+      } else if  (frameCount%30 < 20) {
+        messageText.setValue("Press s/S to SET FRAME");
+      } else if (frameCount%30 > 20) {
+        messageText.setValue("Use arrows & mouse to MOVE FRAME");
+      }
+    }
   }
 }
 
@@ -200,8 +222,9 @@ void startMicroscopeImage() {
   //  microscope = new Capture(this, curCam);
   microscope = new Capture(this, inImageWidth, inImageHeight, camName, inFps);
   microscope.start();
+  micStopped = false;
   opencv = new OpenCV(this, inImageWidth, inImageHeight);
-  pg = createGraphics(inImageWidth, inImageHeight);
+  //pg = createGraphics(inImageWidth, inImageHeight);
   scaleView = (float)height/inImageHeight;
   live = true;
   if (available) {
@@ -210,14 +233,15 @@ void startMicroscopeImage() {
 }
 
 void processOpenCV() {
-  pg.beginDraw();
+  //pg.beginDraw();
   if (useROI) {
     opencv.loadImage(curImage);
     opencv.setROI(roiX, roiY, roiWidth, roiHeight);
   } else {
-    pg.image(curImage, 0, 0);
-    img = pg.get();
-    opencv.loadImage(img);
+    ////pg.image(curImage, 0, 0);
+    ////img = pg.get();
+    //opencv.loadImage(img);
+    opencv.loadImage(curImage);
   }
   src = opencv.getSnapshot();
 
@@ -227,8 +251,10 @@ void processOpenCV() {
   // - Brightness / Contrast
   ///////////////////////////////
   // Green channel
-  g = opencv.getSnapshot(opencv.getG());
-  opencv.loadImage(g);
+  //PImage g = opencv.getSnapshot(opencv.getG());
+  //opencv.loadImage(g);
+  opencv.gray();
+  opencv.brightness(brightnessValue);
   opencv.contrast(contrast);
   preProcessedImage = opencv.getSnapshot();
   ///////////////////////////////
@@ -248,13 +274,14 @@ void processOpenCV() {
   ///////////////////////////////
   // <3> FIND CONTOURS  
   ///////////////////////////////
-  pg.background(0);
-  pg.image(processedImage, 0, 0);
-  img = pg.get();
-  opencv.loadImage(img); 
+  //pg.background(0);
+  //pg.image(processedImage, 0, 0);
+  //img = pg.get();
+  //opencv.loadImage(img); 
+ // opencv.loadImage(img); 
   contours = opencv.findContours(false, true);
   contoursImage = opencv.getSnapshot();
-  pg.endDraw();
+  //pg.endDraw();
 }
 
 void setOpenCVFrame() {

@@ -9,7 +9,7 @@ void displayContours() {
     noFill();
     stroke(0, 255, 0);
     strokeWeight(1);
-    contour.draw();
+//    contour.draw();
     Rectangle r = contour.getBoundingBox();
 
     stroke(255, 0, 0);

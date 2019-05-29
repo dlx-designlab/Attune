@@ -89,6 +89,7 @@ void controlEvent(ControlEvent theEvent) {
       frameRate(inFps);
 
       startMicroscopeImage();
+      messageText.setValue("Enter uID to Start");
     }
   }
 }
@@ -100,6 +101,7 @@ public void startNewSession() {
     messageText.setValue("Press R/r to RECORD");
     cTimer.reset();
     available = false;
+    freezeImage = false;
   } else {
     messageText.setValue("Turn Image ON!");
   }
@@ -125,10 +127,22 @@ public void Start() {
   if (available) {
     cp5.get(Button.class, "Start").setLabel("stop");
     startNewSession();
+    microscope.start();
+    micStopped = false;
   } else {
     cp5.get(Button.class, "Start").setLabel("start");
     clear();
+    closeSession();
   }
+}
+
+void closeSession() {
+  curState = NO_STATE;
+  messageText.setValue("Enter uID to Start");
+  freezeImage = false;
+  brightnessValue = 0;
+  cTimer.reset();
+  pauseTime = millis();
 }
 
 void keyPressed() {
@@ -138,7 +152,7 @@ void keyPressed() {
       messageText.setValue("Recording...");
       videoExport = new VideoExport(this, sessionFolder+cTimer.millis()+".mp4", microscope);
       videoExport.setFrameRate(inFps*0.6);  //assuming a drop of 60% of frames or frame rate
-        videoExport.setQuality(100, 128);//100% quality
+      videoExport.setQuality(100, 128);//100% quality
       videoExport.startMovie();
       startRecordingTime = millis();
     }
@@ -153,6 +167,7 @@ void keyPressed() {
   if (key == 'm' || key == 'M') {
     if (curState == PROCESS_SESSION) {
       parametersToMusic = true;
+      messageText.setValue("Printing...");
     }
   }
 
@@ -161,6 +176,32 @@ void keyPressed() {
       curState = NEW_SESSION;
     }
   }
+
+  if (key == 'f' || key == 'F') {
+    if (curState == PROCESS_SESSION) {
+      freezeImage = !freezeImage;
+      if (freezeImage) {
+        messageText.setValue("Press f/F to UNFREEZE IMAGE");
+      } else {
+        messageText.setValue("Press f/F to FREEZE IMAGE");
+      }
+    }
+  }
+
+  if (key == 'b' || key == 'B') {
+    if (curState == PROCESS_SESSION) {
+      brightnessValue-=5;
+//      println(brightnessValue);
+    }
+  }
+
+  if (key == 'v' || key == 'V') {
+    if (curState == PROCESS_SESSION) {
+      brightnessValue+=5;
+//      println(brightnessValue);
+    }
+  }
+
 
   if (curState == PROCESS_SESSION) {
     if (key == CODED) {
@@ -252,17 +293,19 @@ void createQRCode(float mL, float mW, float mDi, float mDe) {
   String  link = "";
   String fullQRgifPath;
 
-
+  link = "https://attune-app.herokuapp.com/tune_downloader";
   // example: www.servername.com/?uid=zx1234&cp=127|127|127|127
   // 1. density 2. diameter 3. width 4. length
-  textToEncode = link + "/?uid=" + sessionID + "&cp=" + mDe + "|" + mDi + "|" + mW + "|" + mL;
+  textToEncode = link + "?uid=" + sessionID + "&cp=" + mDe + "|" + mDi + "|" + mW + "|" + mL;
 
   try {
-    QRCode = zxing4p.generateQRCode(textToEncode, 100, 100);
+    QRCode = zxing4p.generateQRCode(textToEncode, 150, 150);
     fullQRgifPath = sessionFolder+sessionID+cTimer.millis()+".gif";
     QRCode.save(fullQRgifPath);
     QRCode = loadImage(fullQRgifPath);
-    String params[] = {"lpr", fullQRgifPath};
+    // lp -o media=Custom.WIDTHxLENGTHmm filename 100x180
+
+    String params[] = {"lp", "-o media=Custom.100x98mm", fullQRgifPath};
     exec(params);
   } 
   catch (Exception e) {  
