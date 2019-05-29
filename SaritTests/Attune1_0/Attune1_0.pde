@@ -92,7 +92,7 @@ int curState = NO_STATE;
 
 void setup() {
   size(2050, 1080); //960+130 1090
-//  size(1090, 540); //960+130 1090
+  //  size(1090, 540); //960+130 1090
   // fullScreen();
   String initFileName = "init.txt";  
   String[] lines = loadStrings(initFileName);
@@ -113,14 +113,14 @@ void setup() {
 }
 
 void draw() {
-  background(128);
 
   if (live) {
     if (microscope.available() == true) {
+      background(128);
       microscope.read();
       if (curState == RECORD_SESSION) {
         videoExport.saveFrame();
-//         thread("recordFrame");
+        //         thread("recordFrame");
       }
       curImage = microscope.get(0, 0, inImageWidth, inImageHeight);
       if (useROI) {
@@ -129,55 +129,11 @@ void draw() {
       if (curState == PROCESS_SESSION) {
         processOpenCV();
       }
+      displayImage();
       display = true;
     }
   }
-  if (display) {
-    pushMatrix();
-    translate(offset, 0);
-    pushMatrix();
-    scale(scaleView);
-    if (useROI) {
-      image(croppedImage, 0, 0);
-    } else {
-      image(curImage, 0, 0);
-    }
-    /*    if (curState == PROCESS_SESSION) {
-     image(contoursImage, 0, 0);
-     } else {
-     image(curImage, 0, 0);
-     }*/
-    if (curState == PROCESS_SESSION && !useROI) {
-      noFill();
-      stroke(255, 0, 0);
-      strokeWeight(2);
-      strokeJoin(ROUND);
-      if (movingRoi) {
-        rect(tmpRoiX, tmpRoiY, roiWidth, roiHeight);
-      } else {
-        rect(roiX, roiY, roiWidth, roiHeight);
-      }
-    }
-    if (curState == PROCESS_SESSION) {
-      displayContours();
-
-      //      if ((frameCount % 50)/ (float)50 == 0) {
-      if (frameCount%10 == 0) {
-        messageText.setValue("Use arrows & mouse to MOVE FRAME");
-      } else 
-      messageText.setValue("Press s/S to SET FRAME");
-    }
-    popMatrix();
-    popMatrix();
-  }
-
   displayMessages();
-
-  //  text(frameRate, 10, 10);
-
-  //  text(cp5.get(Textfield.class,"ID").getText(), 360,130);
-  //  text(sessionID, 360,180);
-
   if (curState == RECORD_SESSION && (millis() - startRecordingTime > timeToRecord)) {
     curState = PROCESS_SESSION;
     videoExport.endMovie();
@@ -188,18 +144,54 @@ void recordFrame() {
   videoExport.saveFrame();
 }
 
+void displayImage() {
+  pushMatrix();
+  translate(offset, 0);
+  pushMatrix();
+  scale(scaleView);
+  if (useROI) {
+    image(croppedImage, 0, 0);
+    //     image(processedImage, 0, 0);
+  } else {
+    image(curImage, 0, 0);
+  }
+  if (curState == PROCESS_SESSION) {
+    if (!useROI) {
+      noFill();
+      stroke(255, 0, 0);
+      strokeWeight(2);
+      strokeJoin(ROUND);
+      if (movingRoi) {
+        rect(tmpRoiX, tmpRoiY, roiWidth, roiHeight);
+      } else {
+        rect(roiX, roiY, roiWidth, roiHeight);
+      }
+    }
+    displayContours();
+  }
+  popMatrix();
+  popMatrix();
+}
+
+
 void displayMessages() {
   timerText.setValue(cTimer.toString());
   timerText.draw(this);
   messageText.draw(this);
-  //frameText.setValue(str(frameRate));
-  //frameText.draw(this);
   if (curState == RECORD_SESSION) {
     if (frameCount%2 == 0) {
       fill(255, 0, 0);
       noStroke();
       ellipse(offset + 40, 40, 40, 40);
     }
+  }
+  if (curState == PROCESS_SESSION) {
+
+    //      if ((frameCount % 50)/ (float)50 == 0) {
+    if (frameCount%10 == 0) {
+      messageText.setValue("Use arrows & mouse to MOVE FRAME");
+    } else 
+    messageText.setValue("Press s/S to SET FRAME");
   }
 }
 
