@@ -71,8 +71,8 @@ boolean useROI = false;
 ArrayList<Contour> contours;
 ArrayList<Parameters> parametersData;
 double densityPerFrame = 0;
-float contrast = 1.8;//1.35;
-int thresholdBlockSize = 151;//241;
+float contrast = 1.33;//1.8;//1.35;
+int thresholdBlockSize = 241;//151;//241;
 int thresholdConstant = 5;
 int blobSizeThreshold = int(thresholdLength*pixels2um);
 int blurSize = 0;//4
@@ -97,7 +97,7 @@ int curState = NO_STATE;
 
 void setup() {
   size(2050, 1080); //960+130 1090
-  //  size(1090, 540); //960+130 1090
+//    size(1090, 540); //960+130 1090
   // fullScreen();
   String initFileName = "init.txt";  
   String[] lines = loadStrings(initFileName);
@@ -250,9 +250,9 @@ void processOpenCV() {
   // - Grey channel 
   // - Brightness / Contrast
   ///////////////////////////////
-  // Green channel
-  //PImage g = opencv.getSnapshot(opencv.getG());
-  //opencv.loadImage(g);
+   //Green channel
+  PImage g = opencv.getSnapshot(opencv.getG());
+  opencv.loadImage(g);
   opencv.gray();
   opencv.brightness(brightnessValue);
   opencv.contrast(contrast);

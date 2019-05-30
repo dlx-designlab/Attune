@@ -298,7 +298,7 @@ void createQRCode(float mL, float mW, float mDi, float mDe) {
   String  link = "";
   String fullQRgifPath;
 
-  link = "https://attune-app.herokuapp.com/tune_downloader";
+  link = "https://www.attune-app.com/tune_downloader";
   // example: www.servername.com/?uid=zx1234&cp=127|127|127|127
   // 1. density 2. diameter 3. width 4. length
   textToEncode = link + "?uid=" + sessionID + "&cp=" + mDe + "|" + mDi + "|" + mW + "|" + mL;
