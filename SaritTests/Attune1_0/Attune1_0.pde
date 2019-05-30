@@ -146,7 +146,7 @@ void draw() {
     curState = PROCESS_SESSION;
     videoExport.endMovie();
   }
-  if (curState == NO_STATE && millis() - pauseTime > onHoldTime) {
+  if (live && curState == NO_STATE && millis() - pauseTime > onHoldTime) {
     microscope.stop();
     micStopped = true;
   }
