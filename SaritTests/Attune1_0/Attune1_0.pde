@@ -87,6 +87,9 @@ int pauseTime = 0;
 int onHoldTime = 60000;//10seconds
 boolean micStopped = false;
 
+Table musicParamsTable;
+File musicFile;
+
 // STATES
 int NO_STATE = 999;
 int NEW_SESSION = 0;
@@ -97,7 +100,7 @@ int curState = NO_STATE;
 
 void setup() {
   size(2050, 1080); //960+130 1090
-//    size(1090, 540); //960+130 1090
+  //    size(1090, 540); //960+130 1090
   // fullScreen();
   String initFileName = "init.txt";  
   String[] lines = loadStrings(initFileName);
@@ -108,6 +111,18 @@ void setup() {
      contrast = float(lines[5]);
      thresholdBlockSize = int(lines[6]);
      pixels2um = float(lines[7]);*/
+  }
+
+  musicFile = new File(dataPath("musicParamsTable.csv"));
+  if (!musicFile.exists()) {
+    musicParamsTable = new Table();
+    musicParamsTable.addColumn("uID");
+    musicParamsTable.addColumn("mDensity");
+    musicParamsTable.addColumn("mDiameter");
+    musicParamsTable.addColumn("mWidth");
+    musicParamsTable.addColumn("mLength");
+  } else {
+    musicParamsTable = loadTable("musicParamsTable.csv", "header");
   }
 
   cp5 = new ControlP5(this);
@@ -163,7 +178,7 @@ void displayImage() {
   scale(scaleView);
   if (useROI) {
     image(croppedImage, 0, 0);
-         //image(g, 0, 0);
+    //image(g, 0, 0);
   } else {
     //if (curState == PROCESS_SESSION) {
     //image(g, 0, 0);
@@ -250,7 +265,7 @@ void processOpenCV() {
   // - Grey channel 
   // - Brightness / Contrast
   ///////////////////////////////
-   //Green channel
+  //Green channel
   PImage g = opencv.getSnapshot(opencv.getG());
   opencv.loadImage(g);
   opencv.gray();
@@ -278,7 +293,7 @@ void processOpenCV() {
   //pg.image(processedImage, 0, 0);
   //img = pg.get();
   //opencv.loadImage(img); 
- // opencv.loadImage(img); 
+  // opencv.loadImage(img); 
   contours = opencv.findContours(false, true);
   contoursImage = opencv.getSnapshot();
   //pg.endDraw();

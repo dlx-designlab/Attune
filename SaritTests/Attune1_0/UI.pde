@@ -290,7 +290,21 @@ void saveAndSendData(Parameters avgP) {
   saveFrame(sessionFolder+"MFD-"+cTimer.millis()+".png");
 
   createQRCode(mappedLength, mappedWidth, mappedDiameter, mappedDensity);
+  editParamFile(mappedLength, mappedWidth, mappedDiameter, mappedDensity);
 }
+
+void editParamFile(float mL, float mW, float mDi, float mDe) {
+  TableRow paramsRow = musicParamsTable.addRow();
+
+  //Set the values of all columns in that row.
+  paramsRow.setString("uID", sessionID);
+  paramsRow.setFloat("mDensity", mDe);
+  paramsRow.setFloat("mDiameter", mDi);
+  paramsRow.setFloat("mWidth", mW);
+  paramsRow.setFloat("mLength", mL);
+  saveTable(musicParamsTable, "data/musicParamsTable.csv");
+}
+
 
 void createQRCode(float mL, float mW, float mDi, float mDe) {
   PImage  QRCode;
