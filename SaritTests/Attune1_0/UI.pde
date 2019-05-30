@@ -108,7 +108,7 @@ public void startNewSession() {
 }
 
 public void clear() {
-  if (curState < NEW_SESSION) {
+  if (curState == NO_STATE) {
     cp5.get(Textfield.class, "ID").clear();
     cp5.get(Button.class, "Start").setLabel("start");
     cp5.get(Button.class, "Start").setColorLabel(100);
@@ -133,8 +133,8 @@ public void Start() {
     micStopped = false;
   } else {
     cp5.get(Button.class, "Start").setLabel("start");
-    clear();
     closeSession();
+    clear();
   }
 }
 
@@ -310,16 +310,16 @@ void createQRCode(float mL, float mW, float mDi, float mDe) {
     PGraphics pg;
     QRCode.save(fullQRgifPath);
     QRCode = loadImage(fullQRgifPath);
-    pg = createGraphics(150, 165);
+    pg = createGraphics(150, 185);
     pg.beginDraw();
     pg.background(255);
-    pg.image(QRCode, 0, 0); 
     pg.fill(0);
     PFont mono = createFont("Helvetica", 12, true);
     pg.textFont(mono);
     pg.textSize(12);
     float tw = textWidth(sessionID);
-    pg.text(sessionID, (150-tw)/2, 155);
+    pg.text(sessionID, (150-tw)/2, 20);
+    pg.image(QRCode, 0, 30); 
     pg.endDraw();
     fullQRgifPath = sessionFolder+sessionID+cTimer.millis()+"t.gif";
     pg.save(fullQRgifPath);
