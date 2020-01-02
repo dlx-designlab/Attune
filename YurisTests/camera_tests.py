@@ -5,10 +5,10 @@ cap = cv2.VideoCapture(0)
 
 print('is cap opened: ', cap.isOpened())
 
-print(cap.get(cv2.CAP_PROP_AUTO_WB))
-print(cap.get(cv2.CAP_PROP_WB_TEMPERATURE))
-print(cap.get(cv2.CAP_PROP_FOCUS))
-print(cap.get(cv2.CAP_PROP_AUTOFOCUS))
+# print(cap.get(cv2.CAP_PROP_AUTO_WB))
+# print(cap.get(cv2.CAP_PROP_WB_TEMPERATURE))
+# print(cap.get(cv2.CAP_PROP_FOCUS))
+# print(cap.get(cv2.CAP_PROP_AUTOFOCUS))
 
 # cap.set(cv2.CAP_PROP_AUTOFOCUS, 1)
 # cap.set(cv2.CAP_PROP_FOCUS, 100)

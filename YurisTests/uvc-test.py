@@ -7,7 +7,7 @@ import uvc  # >> https://github.com/pupil-labs/pyuvc
 import logging
 import cv2
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 dev_list = uvc.device_list()
 print(dev_list)
@@ -17,10 +17,13 @@ cap = uvc.Capture(dev_list[0]["uid"])
 controls_dict = dict([(c.display_name, c) for c in cap.controls])
 
 print(cap.avaible_modes)
-print(controls_dict)
+print("--- Available Controls: ---")
+for control in controls_dict:
+    print(control)
+print("------")
 
 # Capture a frame to initialize the cope
-cap.frame_mode = (640, 480, 30)
+cap.frame_mode = (1920, 1080, 20)
 frame = cap.get_frame_robust()
 
 # Set Auto-focus to false and set a custom value
@@ -32,11 +35,24 @@ controls_dict['White Balance temperature,Auto'].value = 0
 controls_dict['White Balance temperature'].value = 2000
 
 # Capture some frames
-for x in range(100):
-    controls_dict['White Balance temperature'].value = 2000
+while (True):
+
+    # controls_dict['White Balance temperature'].value = 2000
+
     frame = cap.get_frame_robust()
-    # print(frame.img.shape)
     cv2.imshow("img", frame.bgr)
-    cv2.waitKey(1)
+
+    # print(frame.img.shape)
+
+    # App controls
+    k = cv2.waitKey(1)
+    if k == ord('f'):    # Esc key to stop
+        controls_dict['Auto Focus'].value = 1
+    if k == ord('q'):    # Esc key to stop
+        break
+    elif k == -1:
+        continue
+    else:
+        print(k)
 
 cap = None

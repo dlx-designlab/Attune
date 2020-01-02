@@ -1,0 +1,32 @@
+#:kivy 1.11.1
+
+<CamViewer>:
+    #size: 300, 700
+    orientation: "vertical"
+    spacing: 5
+    padding: 5, 5, 5, 5
+
+    Label:
+        size_hint: 1, .1
+        font_size: 20
+        text: ' Attune Controller v.0.1.1 '
+
+    Button:
+        size_hint: 1, .2
+        text: "AF"
+        #bold: True
+        on_press: root.set_focus()
+
+    Button:
+        size_hint: 1, .21
+        text: "Focus Up"
+
+    Button:
+        size_hint: 1, .2
+        text: "Focus Down"
+
+    Button:
+        size_hint: 1, .1
+        text: "Quit"
+        #bold: True
+        on_press: root.quit_app()
