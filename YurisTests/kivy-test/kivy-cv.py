@@ -8,6 +8,11 @@ from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.graphics.texture import Texture
 
+# used to control the cope position via GRBL
+import serial
+import time
+
+# Used to control the scope camera
 import uvc  # >> https://github.com/pupil-labs/pyuvc
 import logging
 import cv2
@@ -19,6 +24,11 @@ video_fps = 30
 
 # A parent widget to hold the camera image
 class CamViewer(BoxLayout):
+
+    xPos = 0
+    yPos = 0
+    zPos = 0
+    focus = 200
 
     def __init__(self, **kwargs):
         super(CamViewer, self).__init__(**kwargs)
@@ -34,8 +44,38 @@ class CamViewer(BoxLayout):
         curframe = cap.get_frame_robust()
         cv2.imshow("microscope feed", curframe.bgr)
 
-    def set_focus(self):
+    def set_auto_focus(self):
         controls_dict['Auto Focus'].value = 1
+
+    def jog_focus(self, val):
+        self.focus += val
+        controls_dict['Auto Focus'].value = 0
+        controls_dict['Absolute Focus'].value = self.focus
+        print(f"focus: {self.focus}")
+
+    def jog_x_axis(self, dist):
+        self.xPos += dist
+        the_cmd = f'G0 X{self.xPos}'
+        print(f"Sending: {the_cmd}")
+        s.write((the_cmd + '\n').encode())  # Send g-code block to grbl
+        grbl_out_string = s.readline()  # Wait for grbl response with carriage return
+        print(f"got response: {grbl_out_string.strip()}")
+
+    def jog_y_axis(self, dist):
+        self.yPos += dist
+        the_cmd = f'G0 Y{self.yPos}'
+        print(f"Sending: {the_cmd}")
+        s.write((the_cmd + '\n').encode())  # Send g-code block to grbl
+        grbl_out_string = s.readline()  # Wait for grbl response with carriage return
+        print(f"got response: {grbl_out_string.strip()}")
+
+    def jog_z_axis(self, dist):
+        self.zPos += dist
+        the_cmd = f'G0 Z{self.zPos}'
+        print(f"Sending: {the_cmd}")
+        s.write((the_cmd + '\n').encode())  # Send g-code block to grbl
+        grbl_out_string = s.readline()  # Wait for grbl response with carriage return
+        print(f"got response: {grbl_out_string.strip()}")
 
     def quit_app(self):
 
@@ -63,6 +103,21 @@ class CamApp(App):
 
 if __name__ == '__main__':
 
+    # Open serial port to communicate with GRBL
+    s = serial.Serial('/dev/cu.usbmodem14401', 115200)
+
+    # Wake up grbl
+    s.write(('\r\n\r\n').encode())
+    time.sleep(2)  # Wait for grbl to initialize
+    s.flushInput()  # Flush startup text in serial input
+
+    # Sent Test Command
+    cmd = 'G0 X0 Y0 Z0'  # Strip all EOL characters for consistency
+    print(f"Sending: {cmd}")
+    s.write((cmd + '\n').encode())  # Send g-code block to grbl
+    grbl_out = s.readline()  # Wait for grbl response with carriage return
+    print(f"got response: {grbl_out.strip()}")
+
     # UVC Setup
     logging.basicConfig(level=logging.INFO)
     dev_list = uvc.device_list()
@@ -88,7 +143,7 @@ if __name__ == '__main__':
 
     # Set Auto-WB to false and set a custom value
     controls_dict['White Balance temperature,Auto'].value = 0
-    controls_dict['White Balance temperature'].value = 2000
+    controls_dict['White Balance temperature'].value = 5000
 
     # Run Kivy App
     CamApp().run()
@@ -97,3 +152,7 @@ if __name__ == '__main__':
 print("releasing scope...")
 cap = None
 print("scope released!")
+
+print("releasing GRBL serial...")
+s.close()
+print("GRBL serial released!")

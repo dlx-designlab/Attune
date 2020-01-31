@@ -15,15 +15,54 @@
         size_hint: 1, .2
         text: "AF"
         #bold: True
-        on_press: root.set_focus()
+        on_press: root.set_auto_focus()
 
     Button:
         size_hint: 1, .21
         text: "Focus Up"
+        on_press: root.jog_focus(1)
 
     Button:
         size_hint: 1, .2
         text: "Focus Down"
+        on_press: root.jog_focus(-1)
+
+
+    BoxLayout:
+        orientation: "horizontal"
+
+        Button:
+            text: "X-"
+            on_press: root.jog_x_axis(-1)
+
+        BoxLayout:
+            orientation: "vertical"
+
+            Button:
+                text: 'Y+'
+                on_press: root.jog_y_axis(1)
+
+            Button:
+                text: 'Y-'
+                on_press: root.jog_y_axis(-1)
+
+        Button:
+            text: "X+"
+            on_press: root.jog_x_axis(1)
+
+        BoxLayout:
+            orientation: "vertical"
+            size_hint: 0.3, 1
+
+            Button:
+                text: 'Z+'
+                on_press: root.jog_z_axis(1)
+
+            Button:
+                text: 'Z-'
+                on_press: root.jog_z_axis(-1)
+
+
 
     Button:
         size_hint: 1, .1
