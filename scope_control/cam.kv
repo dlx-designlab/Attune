@@ -1,0 +1,75 @@
+#:kivy 1.11.1
+
+<CamViewer>:
+    #size: 300, 700
+    orientation: "vertical"
+    spacing: 5
+    padding: 5, 5, 5, 5
+
+    Label:
+        size_hint: 1, .1
+        font_size: 20
+        text: ' Attune Controller v.0.1.1 '
+
+    Button:
+        size_hint: 1, .2
+        text: "AF"
+        #bold: True
+        on_press: root.set_auto_focus()
+
+    Button:
+        size_hint: 1, .21
+        text: "Focus Up"
+        on_press: root.jog_focus(1)
+
+    Button:
+        size_hint: 1, .2
+        text: "Focus Down"
+        on_press: root.jog_focus(-1)
+
+
+    BoxLayout:
+        orientation: "horizontal"
+
+        Button:
+            text: "X-"
+            on_press: root.jog_x_axis(-0.5)
+
+        BoxLayout:
+            orientation: "vertical"
+
+            Button:
+                text: 'Y+'
+                on_press: root.jog_y_axis(0.5)
+
+            Button:
+                text: 'Y-'
+                on_press: root.jog_y_axis(-0.5)
+
+        Button:
+            text: "X+"
+            on_press: root.jog_x_axis(0.5)
+
+        BoxLayout:
+            orientation: "vertical"
+            size_hint: 0.3, 1
+
+            Button:
+                text: 'Z+'
+                on_press: root.jog_z_axis(0.5)
+
+            Button:
+                text: 'Z-'
+                on_press: root.jog_z_axis(-0.5)
+
+    Button:
+        size_hint: 1, .2
+        text: "CAPTURE"
+        bold: True
+        on_press: root.capture_panorama()
+
+    Button:
+        size_hint: 1, .1
+        text: "Quit"
+        #bold: True
+        on_press: root.quit_app()
