@@ -23,6 +23,11 @@
 
     Button:
         size_hint: 1, .2
+        text: "WB"
+        on_press: root.set_white_balance()
+
+    Button:
+        size_hint: 1, .2
         text: "AF"
         #bold: True
         on_press: root.set_auto_focus()

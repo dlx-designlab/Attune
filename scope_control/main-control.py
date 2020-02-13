@@ -1,4 +1,5 @@
 # coding:utf-8
+
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.core.window import Window
@@ -11,6 +12,7 @@ from kivy.graphics.texture import Texture
 # used to control the cope position via GRBL
 import serial
 import time
+from time import localtime, strftime
 
 # Used to control the scope camera
 import uvc  # >> https://github.com/pupil-labs/pyuvc
@@ -29,7 +31,8 @@ class ScopeSettings:
     xPos = -1.0
     yPos = -1.0
     zPos = -1.0
-    focus = 104
+    focus = 55
+    white_balance = 6000
     stepSize = 0.5
 
 
@@ -103,6 +106,18 @@ class CamViewer(BoxLayout):
         controls_dict['Auto Focus'].value = 1
         print("Auto Focus on")
 
+    def set_white_balance(self):
+        # Set Auto-WB to false and set a custom value
+        controls_dict['White Balance temperature,Auto'].value = 0
+
+        if ScopeSettings.white_balance >= 6000:
+            ScopeSettings.white_balance = 3000
+        else:
+            ScopeSettings.white_balance += 1000
+
+        controls_dict['White Balance temperature'].value = ScopeSettings.white_balance
+        print(f"White Balance: {ScopeSettings.white_balance}")
+
     def jog_focus(self, val):
         ScopeSettings.focus += val
         controls_dict['Auto Focus'].value = 0
@@ -146,18 +161,19 @@ class CamViewer(BoxLayout):
         print("Homing Done!")
 
     def capture_panorama(self):
-        print("Panorama mode disabled!")
+        # print("Panorama mode disabled!")
         # for i in range(0, 6):
         #     self.jog_x_axis(i/10)
         #     time.sleep(1)
         #
         #     # Update frame and save it
-        #     filename = f"frame{i}.jpg"
-        #     print(f"saving file: {filename}")
-        #     self.curframe = cap.get_frame_robust()
-        #     cv2.imshow("microscope feed", self.curframe.bgr)
-        #     cv2.imwrite(filename, self.curframe.bgr)
-        #     print("file saved!")
+        timestamp = strftime("%Y_%m_%d-%H_%M_%S", localtime())
+        filename = f"pics/cap_{timestamp}.jpg"
+        print(f"saving file: {filename}")
+        self.curframe = cap.get_frame_robust()
+        cv2.imshow("microscope feed", self.curframe.bgr)
+        cv2.imwrite(filename, self.curframe.bgr)
+        print("file saved!")
 
     def quit_app(self):
         App.get_running_app().stop()
@@ -220,17 +236,19 @@ if __name__ == '__main__':
         print(control)
     print("------")
 
+    time.sleep(1)
+
     # Capture a frame to initialize the cope
     cap.frame_mode = (video_w, video_h, video_fps)
     init_frame = cap.get_frame_robust()
 
     # Set Auto-focus to false and set a custom value
     controls_dict['Auto Focus'].value = 0
-    controls_dict['Absolute Focus'].value = 200
+    controls_dict['Absolute Focus'].value = ScopeSettings.focus
 
     # Set Auto-WB to false and set a custom value
     controls_dict['White Balance temperature,Auto'].value = 0
-    controls_dict['White Balance temperature'].value = 5000
+    controls_dict['White Balance temperature'].value = ScopeSettings.white_balance
 
     # Run Kivy App
     CamApp().run()
