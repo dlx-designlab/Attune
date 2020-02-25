@@ -1,4 +1,6 @@
 # coding:utf-8
+# This code is used to control the Self-Positioning Microscope stand
+# More details in the wiki: https://github.com/dlx-designlab/Attune/wiki
 
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
@@ -242,6 +244,8 @@ if __name__ == '__main__':
     cap.frame_mode = (video_w, video_h, video_fps)
     init_frame = cap.get_frame_robust()
 
+    time.sleep(1)
+
     # Set Auto-focus to false and set a custom value
     controls_dict['Auto Focus'].value = 0
     controls_dict['Absolute Focus'].value = ScopeSettings.focus
@@ -249,6 +253,8 @@ if __name__ == '__main__':
     # Set Auto-WB to false and set a custom value
     controls_dict['White Balance temperature,Auto'].value = 0
     controls_dict['White Balance temperature'].value = ScopeSettings.white_balance
+
+    time.sleep(1)
 
     # Run Kivy App
     CamApp().run()
