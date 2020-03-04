@@ -93,3 +93,9 @@ target/
 # .idea/modules
 # *.iml
 # *.ipr
+
+
+# General
+.DS_Store
+.AppleDouble
+.LSOverride

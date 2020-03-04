@@ -1,6 +1,6 @@
-# Project Attune
+# Python CV Tests
 
-Welcome to project Attune!
+This branch is for testing microscope control via openCV, UVC as well as positioning via GRBL
 
 ## Getting Started
 

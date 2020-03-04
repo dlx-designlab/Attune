@@ -33,17 +33,29 @@ class ScopeSettings:
     xPos = -1.0
     yPos = -1.0
     zPos = -1.0
-    focus = 55
+    focus = 70
     white_balance = 6000
     stepSize = 0.5
+
+    x_center_pos = -9  # the X - position at which the scope is in the middle of the finger
+    min_tof_dist = 27  # min distance in mm between the TOF sensor and the user finger
 
 
 # Sending commands to GRBL Arduino
 def send_grbl_cmd(grbl_cmd):
     print(f"Sending: {grbl_cmd}")
-    s.write((grbl_cmd + '\n').encode())  # Send g-code block to grbl
-    grbl_out_string = s.readline()  # Wait for grbl response with carriage return
+    grbl_ser.write((grbl_cmd + '\n').encode())  # Send g-code block to grbl
+    grbl_out_string = grbl_ser.readline()  # Wait for grbl response with carriage return
     print(f"got response: {grbl_out_string.strip()}")
+
+
+def get_sensors_data(sensor_cmd):
+    # print(f"Sending: {sensor_cmd}")
+    sensors_ser.write((sensor_cmd + '\n').encode())  # Send sensor sampling request
+    sensors_out_string = sensors_ser.readline()  # Wait for sensors response with carriage return
+    print(sensors_out_string)
+
+    return sensors_out_string.strip()
 
 
 # A parent widget to hold the camera image
@@ -66,6 +78,7 @@ class CamViewer(BoxLayout):
 
         # Update all the info labels
         self.stp_label.text = str(ScopeSettings.stepSize)
+        self.foc_label.text = str(ScopeSettings.focus)
 
         # todo: Fix this later as the initial scope pos might be different from the actual pos before/after homing cycle
         self.pos_lbl.text = f"X:{ScopeSettings.xPos}, Y:{ScopeSettings.yPos}, Z:{ScopeSettings.zPos}"
@@ -73,6 +86,12 @@ class CamViewer(BoxLayout):
     def update(self, dt):
         # ret, frame = self.capture.read()
         self.curframe = cap.get_frame_robust()
+
+        # Check Blur Amount
+        # gray = cv2.cvtColor(self.curframe.bgr, cv2.COLOR_BGR2GRAY)
+        # fm = cv2.Laplacian(gray, cv2.CV_64F, 15).var()
+        # print(f"sharpness: {round(fm, 2)}")
+
         cv2.imshow("microscope feed", self.curframe.bgr)
 
     def _keyboard_closed(self):
@@ -99,10 +118,65 @@ class CamViewer(BoxLayout):
             self.jog_focus(1)
         elif keycode[1] == 'c':
             self.jog_focus(-1)
+        elif keycode[1] == 'r':  # Get range data
+            self.read_tof_sensor_data()
+        elif keycode[1] == 't':  # Get temperature data
+            self.read_tmp_sensor_data()
+        elif keycode[1] == 'h':  # goto scan starting position
+            self.goto_scan_home()
 
         # Return True to accept the key. Otherwise, it will be used by the system.
         return True
 
+    # Move the scope to a position from which we can start preforming the scan
+    def goto_scan_home(self):
+        # home scope
+        self.run_home_cycle()
+
+        # move to mid X position
+        ScopeSettings.xPos = ScopeSettings.x_center_pos
+        the_cmd = f'G0 X{ScopeSettings.xPos} Y{ScopeSettings.yPos} Z{ScopeSettings.zPos}'
+        send_grbl_cmd(the_cmd)
+        time.sleep(1)
+
+        # Check current distance from finger
+        cur_distance = self.read_tof_sensor_data()
+        pos_delta = round(cur_distance - ScopeSettings.min_tof_dist, 1)
+        print(f"current distance: {cur_distance}, delta: {pos_delta}")
+        time.sleep(0.5)
+
+        if pos_delta > 0:
+            ScopeSettings.zPos -= pos_delta
+
+        print("moving to scan home...")
+        the_cmd = f'G0 X{ScopeSettings.xPos} Y{ScopeSettings.yPos} Z{ScopeSettings.zPos}'
+        send_grbl_cmd(the_cmd)
+        print("### DONE! ###")
+
+        # update gui with new position data
+        self.pos_lbl.text = f"X:{ScopeSettings.xPos}, Y:{ScopeSettings.yPos}, Z:{ScopeSettings.zPos}"
+
+
+    # Gets a several readings from the TOF sensor and makes an average (to reduce sensor fluctuation)
+    def read_tof_sensor_data(self):
+        readings = 6
+        avg_range = 0
+
+        # Get a few readings from the TOF sensor and make an average
+        for i in range(readings):
+            raw_sensor_response = get_sensors_data("rng")
+            avg_range += int(raw_sensor_response)
+
+        avg_range = round(avg_range / readings, 1)
+
+        # print(avg_range)
+        return avg_range
+
+    # Gets Temperature data from the IR sensor
+    def read_tmp_sensor_data(self):
+        raw_sensor_response = get_sensors_data("tmp")
+        print(raw_sensor_response)
+    
     def set_auto_focus(self):
         # print(f"Focus Value {controls_dict['Absolute Focus'].value}")
         controls_dict['Auto Focus'].value = 1
@@ -124,7 +198,9 @@ class CamViewer(BoxLayout):
         ScopeSettings.focus += val
         controls_dict['Auto Focus'].value = 0
         controls_dict['Absolute Focus'].value = ScopeSettings.focus
-        print(f"focus: {ScopeSettings.focus}")
+
+        self.foc_label.text = str(ScopeSettings.focus)
+        # print(f"focus: {ScopeSettings.focus}")
 
     def adjust_step_size(self, step):
         ScopeSettings.stepSize += step
@@ -170,7 +246,7 @@ class CamViewer(BoxLayout):
         #
         #     # Update frame and save it
         timestamp = strftime("%Y_%m_%d-%H_%M_%S", localtime())
-        filename = f"pics/cap_{timestamp}.jpg"
+        filename = f"pics/cap_{timestamp}.png"
         print(f"saving file: {filename}")
         self.curframe = cap.get_frame_robust()
         cv2.imshow("microscope feed", self.curframe.bgr)
@@ -186,9 +262,9 @@ class CamViewer(BoxLayout):
         cap = None
         print("scope released!")
 
-        # Release Serial Port
+        # Release Serial Ports
         print("releasing GRBL serial...")
-        s.close()
+        grbl_ser.close()
         print("GRBL serial released!")
 
         print("Closing App...")
@@ -213,15 +289,25 @@ class CamApp(App):
 if __name__ == '__main__':
 
     # Open serial port to communicate with GRBL
-    s = serial.Serial('/dev/cu.usbmodem142401', 115200)
+    print("Connecting to GRBL...")
+    grbl_ser = serial.Serial('/dev/cu.usbmodem142401', 115200, timeout=10.0, write_timeout=10.0)
 
     # Wake up grbl
-    s.write(('\r\n\r\n').encode())
+    grbl_ser.write(('\r\n\r\n').encode())
     time.sleep(2)  # Wait for grbl to initialize
-    s.flushInput()  # Flush startup text in serial input
+    grbl_ser.flushInput()  # Flush startup text in serial input
+    print("Connected!")
 
     # Sent Test Command - HOME
     # send_grbl_cmd('$H')
+
+    # Open serial port to communicate with Sensors (Temp + TOF connected via Arduino Micro)
+    print("Connecting to Sensors...")
+    sensors_ser = serial.Serial('/dev/cu.usbmodem142301', 115200, timeout=10.0, write_timeout=10.0)
+    time.sleep(1)  # Wait for sensors serial to initialize
+    sensors_ser.flushInput()  # Flush startup text in serial input
+    print("Connected!")
+
 
     # UVC Setup
     logging.basicConfig(level=logging.INFO)
@@ -265,5 +351,5 @@ cap = None
 print("scope released!")
 
 print("releasing GRBL serial...")
-s.close()
+grbl_ser.close()
 print("GRBL serial released!")

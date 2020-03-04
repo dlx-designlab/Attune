@@ -2,6 +2,7 @@
 
 <CamViewer>:
 
+    foc_label: focus_label
     stp_label: step_label
     pos_lbl: pos_label
 
@@ -32,22 +33,29 @@
         #bold: True
         on_press: root.set_auto_focus()
 
-    Button:
-        size_hint: 1, .21
-        text: "Focus Up"
-        on_press: root.jog_focus(1)
-
-    Button:
-        size_hint: 1, .2
-        text: "Focus Down"
-        on_press: root.jog_focus(-1)
-
     BoxLayout:
         orientation: "horizontal"
-        size_hint: 1, 0.15
+        size_hint: 1, 0.2
 
         Label:
-            text: "Step Size:"
+            text: "Focus:"
+
+        Label:
+            id: focus_label
+            text: "0.0"
+
+        BoxLayout:
+            orientation: "vertical"
+
+            Button:
+                text: "+"
+                on_press: root.jog_focus(1)
+            Button:
+                text: "-"
+                on_press: root.jog_focus(-1)
+
+        Label:
+            text: "Step:"
 
         Label:
             id: step_label
