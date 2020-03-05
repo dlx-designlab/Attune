@@ -15,6 +15,7 @@ from kivy.graphics.texture import Texture
 import serial
 import time
 from time import localtime, strftime
+import _thread
 
 # Used to control the scope camera
 import uvc  # >> https://github.com/pupil-labs/pyuvc
@@ -53,7 +54,7 @@ def get_sensors_data(sensor_cmd):
     # print(f"Sending: {sensor_cmd}")
     sensors_ser.write((sensor_cmd + '\n').encode())  # Send sensor sampling request
     sensors_out_string = sensors_ser.readline()  # Wait for sensors response with carriage return
-    print(sensors_out_string)
+    # print(sensors_out_string)
 
     return sensors_out_string.strip()
 
@@ -83,13 +84,14 @@ class CamViewer(BoxLayout):
         # todo: Fix this later as the initial scope pos might be different from the actual pos before/after homing cycle
         self.pos_lbl.text = f"X:{ScopeSettings.xPos}, Y:{ScopeSettings.yPos}, Z:{ScopeSettings.zPos}"
 
+    # ### MAIN UPDATE FUNCTION ####
     def update(self, dt):
         # ret, frame = self.capture.read()
         self.curframe = cap.get_frame_robust()
 
         # Check Blur Amount
         # gray = cv2.cvtColor(self.curframe.bgr, cv2.COLOR_BGR2GRAY)
-        # fm = cv2.Laplacian(gray, cv2.CV_64F, 15).var()
+        # fm = cv2.Laplacian(gray, cv2.CV_64F, 9).var()
         # print(f"sharpness: {round(fm, 2)}")
 
         cv2.imshow("microscope feed", self.curframe.bgr)
@@ -102,21 +104,21 @@ class CamViewer(BoxLayout):
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         # Keycode is composed of an integer + a string
         # Check which key was pressed
-        if keycode[1] == 'w':
+        if keycode[1] == 'w':       # Jog Y axis
             self.jog_scope_position(0, 1, 0)
-        elif keycode[1] == 's':
+        elif keycode[1] == 's':     # Jog Y axis
             self.jog_scope_position(0, -1, 0)
-        elif keycode[1] == 'a':
+        elif keycode[1] == 'a':     # Jog X axis
             self.jog_scope_position(-1, 0, 0)
-        elif keycode[1] == 'd':
+        elif keycode[1] == 'd':     # Jog X axis
             self.jog_scope_position(1, 0, 0)
-        elif keycode[1] == 'q':
+        elif keycode[1] == 'q':     # Jog Z axis
             self.jog_scope_position(0, 0, 1)
-        elif keycode[1] == 'z':
+        elif keycode[1] == 'z':     # Jog Z axis
             self.jog_scope_position(0, 0, -1)
-        elif keycode[1] == 'e':
+        elif keycode[1] == 'e':     # Jog focus
             self.jog_focus(1)
-        elif keycode[1] == 'c':
+        elif keycode[1] == 'c':     # Jog focus
             self.jog_focus(-1)
         elif keycode[1] == 'r':  # Get range data
             self.read_tof_sensor_data()
@@ -124,9 +126,46 @@ class CamViewer(BoxLayout):
             self.read_tmp_sensor_data()
         elif keycode[1] == 'h':  # goto scan starting position
             self.goto_scan_home()
+        elif keycode[1] == 'f':  # Find best focus
+            _thread.start_new_thread(self.adjust_focus, (20, 40, ))
 
         # Return True to accept the key. Otherwise, it will be used by the system.
         return True
+
+    # Find best focus value (auto focus)
+    def adjust_focus(self, min_focus, focus_range):
+
+        print("refocusing...")
+
+        # Reset to initial focus settings
+        controls_dict['Auto Focus'].value = 0
+        ScopeSettings.focus = min_focus
+
+        # an array to store sharpness score
+        sharpness_idx = [0] * focus_range
+
+        for i in range(focus_range):
+            # step focus up
+            ScopeSettings.focus += 1
+            controls_dict['Absolute Focus'].value = ScopeSettings.focus
+            self.foc_label.text = str(ScopeSettings.focus)
+            time.sleep(0.1)
+
+            # capture frame, estimate sharpness and save
+            # self.curframe = cap.get_frame_robust()
+            gray = cv2.cvtColor(self.curframe.bgr, cv2.COLOR_BGR2GRAY)
+            sharpness_idx[i] = round(cv2.Laplacian(gray, cv2.CV_64F, 9).var(), 2)
+
+            # cv2.imshow("microscope feed", self.curframe.bgr)
+
+        # Adjust focus to best estimation
+        ScopeSettings.focus = min_focus + sharpness_idx.index(max(sharpness_idx))
+        controls_dict['Absolute Focus'].value = ScopeSettings.focus
+        self.foc_label.text = str(ScopeSettings.focus)
+
+        print(sharpness_idx)
+        print(sharpness_idx.index(max(sharpness_idx)))
+        print("Done!!")
 
     # Move the scope to a position from which we can start preforming the scan
     def goto_scan_home(self):
@@ -156,7 +195,6 @@ class CamViewer(BoxLayout):
         # update gui with new position data
         self.pos_lbl.text = f"X:{ScopeSettings.xPos}, Y:{ScopeSettings.yPos}, Z:{ScopeSettings.zPos}"
 
-
     # Gets a several readings from the TOF sensor and makes an average (to reduce sensor fluctuation)
     def read_tof_sensor_data(self):
         readings = 6
@@ -166,10 +204,11 @@ class CamViewer(BoxLayout):
         for i in range(readings):
             raw_sensor_response = get_sensors_data("rng")
             avg_range += int(raw_sensor_response)
+            print(f"reading {1}: {raw_sensor_response}")
 
         avg_range = round(avg_range / readings, 1)
+        print(f"avg: {avg_range}")
 
-        # print(avg_range)
         return avg_range
 
     # Gets Temperature data from the IR sensor
