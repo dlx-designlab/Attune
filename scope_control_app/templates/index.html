@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Scope Capture App</title>
+    ​<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <h2 class="title">Scope Capture App</h2>
+
+    <div class="control-buttons">
+        <button onclick="set_scope_control('Absolute Focus', -1)">F-</button>
+        <button onclick="set_scope_control('Auto Focus', 1)">AF</button>
+        <button onclick="set_scope_control('Absolute Focus', 1)">F+</button>
+
+        <button onclick="save_scope_image()">CAPTURE!</button>
+
+    </div>
+    <div class="settings-panel">
+        <h2>Settings:</h2>
+        <div>
+            <span>WB: </span>
+            <input type="range" min="2300" max="6600" value="6000" class="slider" id="wbSlider">
+            <span id="wbSliderVal"></span>
+        </div>
+        <div>
+            <span>Brightness: </span>
+            <input type="range" min="0" max="255" value="50" class="slider" id="brightnessSlider">
+            <span id="brightnessSliderVal"></span>
+        </div>
+        <div>
+            <span>Contrast: </span>
+            <input type="range" min="0" max="255" value="100" class="slider" id="contrastSlider">
+            <span id="contrastSliderVal"></span>
+        </div>
+
+
+<!--# Auto Focus 0-1-->
+<!--# Absolute Focus 0-255-->
+<!--# Backlight Compensation 0-8-->
+<!--# Brightness 0-255-->
+<!--# Contrast 0-255-->
+<!--# Gain 0-10-->
+<!--# Power Line frequency-->
+<!--# Hue ?? -->
+<!--# Saturation 0 - 255 -->
+<!--# Gamma ?? -->
+<!--# White Balance temperature 2300 - 6600 -->
+<!--# White Balance temperature,Auto-->
+    </div>
+
+    <p class="status" id="status">status...</p>
+
+    <div class="video-feed">
+        <img src="{{ url_for('video_feed') }}">
+    </div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+<script>
+
+    // Update Sliders values and send to Scope
+    
+    var sliders = document.querySelectorAll('.slider')
+    sliders.forEach(item => {
+        
+        var labelId = item.id + "Val"
+        var label = document.getElementById(labelId);
+        label.innerHTML = item.value
+
+        // Update slider label 
+        item.oninput = function(){
+            label.innerHTML = this.value
+        }
+
+        // Update actual scope setting with selected slider value
+        item.onchange = function() {
+            var controlId = this.id
+            switch(controlId){
+                case "wbSlider":
+                    console.log("White Balance temperature:" + this.value);
+                    set_scope_control('White Balance temperature', this.value)
+                    break;
+                case "brightnessSlider":
+                    console.log("Brightness:" + this.value);
+                    set_scope_control('Brightness', this.value)                    
+                    break;
+                case "contrastSlider":
+                    console.log("Contrast:" + this.value);
+                    set_scope_control('Contrast', this.value)                    
+                    break;
+            }
+
+        }
+    });
+
+    // Scope Focus Control function
+    function set_scope_control(ctl, val) {
+
+      $.ajax({
+          type: 'POST',
+          url: "/set_control",
+          contentType: 'application/json;charset=UTF-8',
+          data: JSON.stringify({'control': ctl, 'value': val}),
+          success: function(result) {
+                document.getElementById("status").innerHTML = result;
+          },
+          error: function(result) {
+                document.getElementById("status").innerHTML = "ERROR!";
+          }
+      });
+
+    };
+
+    function save_scope_image(){
+      $.ajax({
+          type: 'POST',
+          url: "/save_image",
+          contentType: 'application/json;charset=UTF-8',
+          success: function(result) {
+                document.getElementById("status").innerHTML = result;
+          },
+          error: function(result) {
+                document.getElementById("status").innerHTML = "ERROR!";
+          }
+      });
+    }
+
+</script>
+
+</body>
+</html>
