@@ -27,12 +27,12 @@ cap.frame_mode = (1920, 1080, 20)
 frame = cap.get_frame_robust()
 
 # Set Auto-focus to false and set a custom value
-controls_dict['Auto Focus'].value = 0
-controls_dict['Absolute Focus'].value = 200
-
-# Set Auto-WB to false and set a custom value
-controls_dict['White Balance temperature,Auto'].value = 0
-controls_dict['White Balance temperature'].value = 2000
+# controls_dict['Auto Focus'].value = 0
+# controls_dict['Absolute Focus'].value = 200
+#
+# # Set Auto-WB to false and set a custom value
+# controls_dict['White Balance temperature,Auto'].value = 0
+# controls_dict['White Balance temperature'].value = 2000
 
 # Capture some frames
 while (True):

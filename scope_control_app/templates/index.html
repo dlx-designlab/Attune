@@ -1,23 +1,35 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Scope Capture App</title>
-    ​<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
+<title>Scope Capture App</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+​</head>
+
 <body>
 
-    <h2 class="title">Scope Capture App</h2>
+<link rel="stylesheet" type="text/css" href="../static/css/style.css"> -->
+​<!-- <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}"> -->
 
-    <div class="control-buttons">
-        <button onclick="set_scope_control('Absolute Focus', -1)">F-</button>
-        <button onclick="set_scope_control('Auto Focus', 1)">AF</button>
-        <button onclick="set_scope_control('Absolute Focus', 1)">F+</button>
-
-        <button onclick="save_scope_image()">CAPTURE!</button>
-
-    </div>
-    <div class="settings-panel">
+<style>
+  .bgimg {
+/*    background-image: url('{{ url_for('video_feed') }}');*/
+    background-image: url('img.jpg');    
+    background-color: #000;
+    min-height: 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    /*background-size: contain;*/
+    margin: 0;
+    padding: 0;
+    position:relative;
+  }
+</style>
+<div class="bgimg">
+    
+    
+    <div class="settings-panel w3-display-left">
         <h2>Settings:</h2>
         <div>
             <span>WB: </span>
@@ -25,7 +37,7 @@
             <span id="wbSliderVal"></span>
         </div>
         <div>
-            <span>Brightness: </span>
+            <span>Bright: </span>
             <input type="range" min="0" max="255" value="50" class="slider" id="brightnessSlider">
             <span id="brightnessSliderVal"></span>
         </div>
@@ -48,20 +60,36 @@
 <!--# Gamma ?? -->
 <!--# White Balance temperature 2300 - 6600 -->
 <!--# White Balance temperature,Auto-->
+    
+      <p class="status" id="status">status...</p>
+
     </div>
 
-    <p class="status" id="status">status...</p>
+  <div class="focus-control-buttons-panel w3-display-right">
+      <button class="focus-control-button" onclick="set_scope_control('Absolute Focus', 1)"> F+ </button>
+      <button class="focus-control-button" onclick="set_scope_control('Auto Focus', 1)">AF</button>
+      <button class="focus-control-button" onclick="set_scope_control('Absolute Focus', -1)"> F- </button>
+  </div>
 
+  <div class="w3-display-bottommiddle">
+    <button class="record-button"  onclick="save_scope_image()">REC</button>
+  </div>
+<!-- 
     <div class="video-feed">
         <img src="{{ url_for('video_feed') }}">
     </div>
+ -->
 
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+</div>
+
+
+<!-- JS SCRIPTS -->
+<script src="../static/scripts/jquery.min.js"></script>
+<!-- <script src="{{ url_for('static', filename='scripts/jquery.min.js') }}"></script> -->
 
 <script>
 
     // Update Sliders values and send to Scope
-    
     var sliders = document.querySelectorAll('.slider')
     sliders.forEach(item => {
         
@@ -69,7 +97,7 @@
         var label = document.getElementById(labelId);
         label.innerHTML = item.value
 
-        // Update slider label 
+        // Update slidera labels 
         item.oninput = function(){
             label.innerHTML = this.value
         }
@@ -95,7 +123,7 @@
         }
     });
 
-    // Scope Focus Control function
+    // Set Scope Controls values function
     function set_scope_control(ctl, val) {
 
       $.ajax({
@@ -113,6 +141,7 @@
 
     };
 
+    // Capture Scope image
     function save_scope_image(){
       $.ajax({
           type: 'POST',

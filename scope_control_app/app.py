@@ -44,11 +44,6 @@ def index():
     return render_template("index.html")
 
 
-@app.route("/video_feed")
-def video_feed():
-    return Response(generate(), mimetype="multipart/x-mixed-replace; boundary=frame")
-
-
 @app.route('/set_control', methods=['POST'])
 def set_ctrl():
     if request.method == 'POST' and request.is_json:
@@ -78,19 +73,25 @@ def save_image():
     timestamp = strftime("%Y_%m_%d-%H_%M_%S", localtime())
     filename = f"pics/cap_{timestamp}.png"
     print(f"saving file: {filename}")
-    cv2.imwrite(filename, outputFrame)
+    cv2.imwrite(filename, outputFrame.bgr)
     print("file saved!")
 
     return "File Saved!"
 
 
+@app.route("/video_feed")
+def video_feed():
+    return Response(generate(), mimetype="multipart/x-mixed-replace; boundary=frame")
+
+
+# Captures frames in the background (in a separate thread)
 def capture_frame():
     # grab global references to the video stream, output frame, and lock variables
-    global outputFrame, lock
+    global cap, outputFrame, lock
     while True:
         frame = cap.get_frame_robust()
         with lock:
-            outputFrame = frame.bgr
+            outputFrame = frame
 
 
 def generate():
@@ -103,20 +104,19 @@ def generate():
                 continue
 
             # encode the frame in JPEG format
-            (flag, encodedImage) = cv2.imencode(".jpg", outputFrame)
-            if not flag:
-                continue
+            # flag, encodedImage = cv2.imencode(".jpg", outputFrame)
+            # if not flag:
+            #     continue
 
-        yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + bytearray(encodedImage) + b'\r\n')
+        yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + bytearray(outputFrame.jpeg_buffer) + b'\r\n')
 
 
-# check to see if this is the main thread of execution
 if __name__ == '__main__':
     # commandline argument parser
-    ap = argparse.ArgumentParser()
-    ap.add_argument("-i", "--ip", type=str, required=True, help="ip address of the device")
-    ap.add_argument("-o", "--port", type=int, required=True, help="ephemeral port number of the server (1024 to 65535)")
-    args = vars(ap.parse_args())
+    # ap = argparse.ArgumentParser()
+    # ap.add_argument("-i", "--ip", type=str, required=True, help="ip address of the device")
+    # ap.add_argument("-o", "--port", type=int, required=True, help="ephemeral port number of the server (1024 to 65535)")
+    # args = vars(ap.parse_args())
 
     # UVC Setup
     logging.basicConfig(level=logging.INFO)
@@ -142,12 +142,12 @@ if __name__ == '__main__':
     time.sleep(2)
 
     # Set Auto-focus to false and set a custom value
-    controls_dict['Auto Focus'].value = 0
-    ScopeSettings.focus = controls_dict['Absolute Focus'].value
+    # controls_dict['Auto Focus'].value = 0
+    # ScopeSettings.focus = controls_dict['Absolute Focus'].value
 
     # Set Auto-WB to false and set a custom value
-    controls_dict['White Balance temperature,Auto'].value = 0
-    controls_dict['White Balance temperature'].value = ScopeSettings.white_balance
+    # controls_dict['White Balance temperature,Auto'].value = 0
+    # controls_dict['White Balance temperature'].value = ScopeSettings.white_balance
 
     time.sleep(1)
 
@@ -157,7 +157,8 @@ if __name__ == '__main__':
     t.start()
 
     # start the flask app
-    app.run(host=args["ip"], port=args["port"], debug=True, threaded=True, use_reloader=False)
+    # app.run(host=args["ip"], port=args["port"], debug=True, threaded=True, use_reloader=False)
+    app.run(host='0.0.0.0', port=8000, debug=True, threaded=True, use_reloader=False)
 
 
 print("releasing scope...")
