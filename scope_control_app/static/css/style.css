@@ -87,6 +87,11 @@ button:focus {outline:0;}
     border-radius: 0px 10px 10px 0px;
 }
 
+.setting-title{
+    display: block;
+    margin-top: 10px;
+}
+
 .status {
     margin: 20px 0;
     padding: 10px;

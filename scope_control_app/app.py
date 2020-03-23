@@ -3,6 +3,7 @@
 from flask import Response
 from flask import Flask, jsonify, redirect, url_for, request
 from flask import render_template
+import json
 import threading
 import argparse
 import time
@@ -20,47 +21,54 @@ outputFrame = None
 lock = threading.Lock()
 
 
-class ScopeSettings:
-
-    # todo: add app settings to config default values
-
-    # xPos = -1.0
-    # yPos = -1.0
-    # zPos = -1.0
-    # stepSize = 0.5
-    # x_center_pos = -9  # the X - position at which the scope is in the middle of the finger
-    # min_tof_dist = 27  # min distance in mm between the TOF sensor and the user finger
-
-    video_w = 1280
-    video_h = 720
-    video_fps = 30
-    focus = 100
-    white_balance = 6000
+# class ScopeSettings:
+#
+#     # xPos = -1.0
+#     # yPos = -1.0
+#     # zPos = -1.0
+#     # stepSize = 0.5
+#     # x_center_pos = -9  # the X - position at which the scope is in the middle of the finger
+#     # min_tof_dist = 27  # min distance in mm between the TOF sensor and the user finger
+#
+#     video_w = 1280
+#     video_h = 720
+#     video_fps = 30
+#     focus = 100
 
 
 @app.route("/")
 def index():
     # return the rendered template
-    return render_template("index.html")
+    return render_template("index.html", scopeSettings=controls_dict)
 
 
 @app.route('/set_control', methods=['POST'])
 def set_ctrl():
+    global controls_dict
+
     if request.method == 'POST' and request.is_json:
         req_data = request.get_json()
         ctrl = req_data['control']
-        val = req_data['value']
+        val = int(req_data['value'])
 
-        # increment the scope focus by by a step
-        # todo: sort auto-focus to manual focus smooth transition
+        # Adjust scope controls
+        # todo: fix smooth transition between auto-focus and manual focus
         if ctrl == 'Absolute Focus':
-            # print(controls_dict['Absolute Focus'].value)
-            # ScopeSettings.focus = controls_dict['Absolute Focus'].value
-            val = ScopeSettings.focus = ScopeSettings.focus + val
+            print(controls_dict['Absolute Focus'])
+            foc = int(controls_dict['Absolute Focus'].value)
+            foc += val
+            print(foc)
+            controls_dict['Absolute Focus'].value = foc
+            print(controls_dict['Absolute Focus'])
+        else:
+            print(f"control: {ctrl}  /  value: {val}")
+            controls_dict[ctrl].value = val
 
-        # Apply the setting to the scope
-        print(f"control: {ctrl}  /  value: {val}")
-        controls_dict[ctrl].value = int(val)
+        # if ctrl == "Auto Focus":
+        #     time.sleep(2)
+        #     scopeSettings.focus = controls_dict['Absolute Focus'].value
+        #     print(f"{controls_dict['Absolute Focus'].value} // {scopeSettings.focus}")
+
     else:
         print("did not set!")
 
@@ -118,36 +126,46 @@ if __name__ == '__main__':
     # ap.add_argument("-o", "--port", type=int, required=True, help="ephemeral port number of the server (1024 to 65535)")
     # args = vars(ap.parse_args())
 
+    # Load scope settings from a JSON File
+    with open('scope_settings.json', 'r') as f:
+        uvc_settings = json.load(f)
+
     # UVC Setup
     logging.basicConfig(level=logging.INFO)
     dev_list = uvc.device_list()
-    print(dev_list)
 
-    # Todo: make sure it always connects to the G-Scope
-    # Add new capture device and its control properties
-    cap = uvc.Capture(dev_list[0]["uid"])
+    # Find the G-Scope device number within all attached devices.
+    scopeDeviceId = 0
+    for i, device in enumerate(dev_list):
+        print(f"{i}: {device['name']}")
+        if "G-Scope" in device["name"]:
+            scopeDeviceId = i
+
+    print(f"G-Scope device id is: {scopeDeviceId}")
+
+    # Add G-Scope as new capture device and get its control properties
+    cap = uvc.Capture(dev_list[scopeDeviceId]["uid"])
     controls_dict = dict([(c.display_name, c) for c in cap.controls])
 
     print(cap.avaible_modes)
-    print("--- Available Controls: ---")
+    print("--- Available Controls & Init Values: ---")
     for control in controls_dict:
-        print(control)
+        print(f"{control}: {controls_dict[control].value}")
     print("---------------------------")
 
     time.sleep(1)
 
-    # Capture a frame to initialize the microscope
-    cap.frame_mode = (ScopeSettings.video_w, ScopeSettings.video_h, ScopeSettings.video_fps)
+    # Capture one frame to initialize the microscope
+    cap.frame_mode = (uvc_settings["video_w"], uvc_settings["video_h"], uvc_settings["video_fps"])
     init_frame = cap.get_frame_robust()
     time.sleep(2)
 
-    # Set Auto-focus to false and set a custom value
-    # controls_dict['Auto Focus'].value = 0
-    # ScopeSettings.focus = controls_dict['Absolute Focus'].value
-
-    # Set Auto-WB to false and set a custom value
-    # controls_dict['White Balance temperature,Auto'].value = 0
-    # controls_dict['White Balance temperature'].value = ScopeSettings.white_balance
+    # Apply Custom Setting to the Scope via UVC
+    print("--- Adjusting custom control settings: ---")
+    for control in controls_dict:
+        controls_dict[control].value = uvc_settings[control]
+        print(f"{control}: {controls_dict[control].value}")
+    print("---------------------------")
 
     time.sleep(1)
 
