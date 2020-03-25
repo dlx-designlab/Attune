@@ -1,15 +1,30 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Scope Capture App</title>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-​</head>
+    <title>Scope Capture App</title>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, shrink-to-fit=no">
+    <meta name="description" content="Scope Capture App">
+    
+    <!-- iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/icon-96.png') }}">
+    
+    <!-- Web app manifest -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+
+    <link rel="icon" href="{{ url_for('static', filename='img/icon-96.png') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+
+<!--      <link rel="manifest" href="../static/manifest.json"> -->
+<!--     <link rel="stylesheet" type="text/css" href="../static/css/style.css"> -->
+ 
+
+</head>
 
 <body>
 
-<link rel="stylesheet" type="text/css" href="../static/css/style.css"> -->
-​<!-- <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}"> -->
 
 <style>
   .bgimg {
@@ -28,8 +43,12 @@
 </style>
 <div class="bgimg">
     
-    
-    <div class="settings-panel w3-display-left">
+    <button id="settingsBtn" class="settings-buton w3-display-left">SET</button>
+
+    <div id="settingsPanel" class="settings-panel w3-display-left">
+        
+        <span class="close-settings-panel">&times;</span>
+
         <h2>Settings:</h2>
         <div>
             <span class="setting-title">White Balance: </span>
@@ -95,8 +114,8 @@
 
 
 <!-- JS SCRIPTS -->
-<script src="../static/scripts/jquery.min.js"></script>
-<!-- <script src="{{ url_for('static', filename='scripts/jquery.min.js') }}"></script> -->
+<!-- <script src="../static/scripts/jquery.min.js"></script> -->
+<script src="{{ url_for('static', filename='scripts/jquery.min.js') }}"></script>
 
 <script>
 
@@ -187,6 +206,26 @@
           }
       });
     }
+
+
+    // Settings Panel Popup Control
+    var settingsPopup = document.getElementById("settingsPanel");
+    var settingsBtn = document.getElementById("settingsBtn");
+    var span = document.getElementsByClassName("close-settings-panel")[0];
+
+    settingsBtn.onclick = function() {
+      settingsPopup.style.display = "block";
+      settingsBtn.style.display="none";
+    }
+    span.onclick = function() {
+      settingsPopup.style.display = "none";
+      settingsBtn.style.display = "block";
+    }
+    // window.onclick = function(event) {
+    //   if (event.target == modal) {
+    //     modal.style.display = "none";
+    //   }
+    // }    
 
 </script>
 

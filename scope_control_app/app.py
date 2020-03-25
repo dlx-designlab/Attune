@@ -20,6 +20,7 @@ app = Flask(__name__)
 outputFrame = None
 lock = threading.Lock()
 
+focus = 100
 
 # class ScopeSettings:
 #
@@ -44,7 +45,7 @@ def index():
 
 @app.route('/set_control', methods=['POST'])
 def set_ctrl():
-    global controls_dict
+    global controls_dict, focus
 
     if request.method == 'POST' and request.is_json:
         req_data = request.get_json()
@@ -54,11 +55,11 @@ def set_ctrl():
         # Adjust scope controls
         # todo: fix smooth transition between auto-focus and manual focus
         if ctrl == 'Absolute Focus':
-            print(controls_dict['Absolute Focus'])
-            foc = int(controls_dict['Absolute Focus'].value)
-            foc += val
-            print(foc)
-            controls_dict['Absolute Focus'].value = foc
+            # print(controls_dict['Absolute Focus'])
+            # foc = int(controls_dict['Absolute Focus'].value)
+            focus += val
+            print(focus)
+            controls_dict['Absolute Focus'].value = focus
             print(controls_dict['Absolute Focus'])
         else:
             print(f"control: {ctrl}  /  value: {val}")

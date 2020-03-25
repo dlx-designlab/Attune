@@ -38,8 +38,8 @@ cap.frame_mode = (640, 480, 30)
 frame = cap.get_frame_robust()
 
 # Set Auto-focus to false and set a custom value
-controls_dict['Auto Focus'].value = 0
-controls_dict['Absolute Focus'].value = 100
+# controls_dict['Auto Focus'].value = 0
+# controls_dict['Absolute Focus'].value = 100
 #
 # # Set Auto-WB to false and set a custom value
 # controls_dict['White Balance temperature,Auto'].value = 0
@@ -58,12 +58,14 @@ while (True):
     # App controls
     k = cv2.waitKey(1)
     if k == ord('f'):    # f to autoFocus
-        if controls_dict['Auto Focus'].value == 1:
-            controls_dict['Auto Focus'].value = 0
-        else:
-            controls_dict['Auto Focus'].value = 1
+        controls_dict = dict([(c.display_name, c) for c in cap.controls])
+        print(controls_dict['Absolute Focus'].value)
+        # if controls_dict['Auto Focus'].value == 1:
+        #     controls_dict['Auto Focus'].value = 0
+        # else:
+        #     controls_dict['Auto Focus'].value = 1
 
-        print(controls_dict['Auto Focus'].value)
+        # print(controls_dict['Auto Focus'].value)
 
     if k == ord('g'):    # g to focus up
         controls_dict['Auto Focus'].value = 0
