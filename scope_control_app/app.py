@@ -1,19 +1,22 @@
-# import imutils
-# from imutils.video import VideoStream
 from flask import Response
-from flask import Flask, jsonify, redirect, url_for, request
+from flask import Flask, jsonify, redirect, url_for, request, make_response
 from flask import render_template
 import json
-import threading
+
 import argparse
+import threading
+import uuid
 import time
 from time import localtime, strftime
-import uvc  # >> https://github.com/pupil-labs/pyuvc
 import logging
-import cv2
+
+import uvc  # >> https://github.com/pupil-labs/pyuvc
+# import cv2
+from PIL import Image
 
 # initialize a flask object
 app = Flask(__name__)
+app.secret_key = '\x90\xb9\xd9\xaaj\x97\xee\xeb\x1c#\x16B\xb62\xb9\xa3rS\x15\xd2\x84;\x90c'
 
 # initialize the output frame and a lock used to ensure thread-safe
 # exchanges of the output frames (useful when multiple browsers/tabs are viewing the stream)
@@ -82,7 +85,11 @@ def save_image():
     timestamp = strftime("%Y_%m_%d-%H_%M_%S", localtime())
     filename = f"pics/cap_{timestamp}.png"
     print(f"saving file: {filename}")
-    cv2.imwrite(filename, outputFrame.bgr)
+
+    # Convert BGR to RGB and save the image
+    im_rgb = outputFrame.bgr[:, :, [2, 1, 0]]
+    Image.fromarray(im_rgb).save(filename)
+    # cv2.imwrite(filename, outputFrame.bgr)
     print("file saved!")
 
     return "File Saved!"
@@ -91,6 +98,32 @@ def save_image():
 @app.route("/video_feed")
 def video_feed():
     return Response(generate(), mimetype="multipart/x-mixed-replace; boundary=frame")
+
+
+@app.route("/cookies")
+def cookies_test():
+
+    cookies = request.cookies
+
+    if cookies.get("scan_uuid"):
+        uid = cookies.get("scan_uuid")
+        res = make_response(f"welcome back! {uid}!", 200)
+    else:
+        res = make_response("hi new visitor! we just set you with a cookie!", 200)
+        uid = uuid.uuid4().hex
+        uid = uid.upper()[0:8]
+
+        res.set_cookie(
+            "scan_uuid",
+            value=uid,
+            max_age=None,
+            expires=None,
+            path='/',
+            domain=None,
+            secure=False,
+        )
+
+    return res
 
 
 # Captures frames in the background (in a separate thread)
