@@ -8,6 +8,7 @@ import threading
 import uuid
 import time
 from time import localtime, strftime
+import datetime
 import logging
 
 import uvc  # >> https://github.com/pupil-labs/pyuvc
@@ -42,8 +43,31 @@ focus = 100
 
 @app.route("/")
 def index():
+
+    cookies = request.cookies
+
+    # Check for existing cookie with UID. Make a new one if doesnt exist
+    if cookies.get("scan_uuid"):
+        uid = cookies.get("scan_uuid")
+        res = make_response(render_template("index.html", scopeSettings=controls_dict, userId=uid))
+    else:
+        # Generate a random UID 8 characters long
+        uid = uuid.uuid4().hex
+        uid = uid.upper()[0:8]
+        res = make_response(render_template("index.html", scopeSettings=controls_dict, userId=uid))
+        # Create the cookie
+        res.set_cookie(
+            "scan_uuid",
+            value=uid,
+            max_age=None,
+            expires=datetime.datetime.now() + datetime.timedelta(days=90),
+            path='/',
+            domain=None,
+            secure=False,
+        )
+
     # return the rendered template
-    return render_template("index.html", scopeSettings=controls_dict)
+    return res
 
 
 @app.route('/set_control', methods=['POST'])
@@ -82,8 +106,14 @@ def set_ctrl():
 # Save an image file to the server
 @app.route('/save_image', methods=['POST'])
 def save_image():
+
+    # get User Id from cookie
+    cookies = request.cookies
+    uid = cookies.get("scan_uuid")
+
+    # get current timestamp
     timestamp = strftime("%Y_%m_%d-%H_%M_%S", localtime())
-    filename = f"pics/cap_{timestamp}.png"
+    filename = f"pics/cap_{uid}_{timestamp}.png"
     print(f"saving file: {filename}")
 
     # Convert BGR to RGB and save the image
@@ -98,32 +128,6 @@ def save_image():
 @app.route("/video_feed")
 def video_feed():
     return Response(generate(), mimetype="multipart/x-mixed-replace; boundary=frame")
-
-
-@app.route("/cookies")
-def cookies_test():
-
-    cookies = request.cookies
-
-    if cookies.get("scan_uuid"):
-        uid = cookies.get("scan_uuid")
-        res = make_response(f"welcome back! {uid}!", 200)
-    else:
-        res = make_response("hi new visitor! we just set you with a cookie!", 200)
-        uid = uuid.uuid4().hex
-        uid = uid.upper()[0:8]
-
-        res.set_cookie(
-            "scan_uuid",
-            value=uid,
-            max_age=None,
-            expires=None,
-            path='/',
-            domain=None,
-            secure=False,
-        )
-
-    return res
 
 
 # Captures frames in the background (in a separate thread)
@@ -157,7 +161,8 @@ if __name__ == '__main__':
     # commandline argument parser
     # ap = argparse.ArgumentParser()
     # ap.add_argument("-i", "--ip", type=str, required=True, help="ip address of the device")
-    # ap.add_argument("-o", "--port", type=int, required=True, help="ephemeral port number of the server (1024 to 65535)")
+    # ap.add_argument("-o", "--port", type=int, required=True,
+    #   help="ephemeral port number of the server (1024 to 65535)")
     # args = vars(ap.parse_args())
 
     # Load scope settings from a JSON File

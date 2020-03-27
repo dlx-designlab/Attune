@@ -1,7 +1,4 @@
-
-/* W3.CSS 4.13 June 2019 by Jan Egil and Borge Refsnes */
 html{box-sizing:border-box}*,*:before,*:after{box-sizing:inherit}
-/* Extract from normalize.css by Nicolas Gallagher and Jonathan Neal git.io/normalize */
 html{-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%}
 head, header {overflow: hidden;}
 article,aside,details,figcaption,figure,footer,header,main,menu,nav,section{display:block}summary{display:list-item}
@@ -81,15 +78,18 @@ button:focus {outline:0;}
 
 .record-button{
     margin-bottom: 50px;
+    color: white;
     background-color: crimson;
     border-color: pink;
-    border-width: 1em;
+    font-size: 0.8em;
+    border-width: 0.8em;
 }
 
 .settings-panel{
     display: none;
     z-index: 1;
-    background-color: rgba(100,100,100,0.7);
+    color: white;
+    background-color: rgba(100,100,100,0.8);
 	margin: 0px;
 	padding: 10px;
     max-width: 300px;
@@ -126,6 +126,14 @@ button:focus {outline:0;}
     width: 1280px;
     margin: auto;
     padding: 5px;
+}
+
+.uid{
+    padding: 0 20px 0 20px;
+    background-color: rgba(100,100,100,0.6);
+    color: white;
+    font-size: 0.8em;
+    border-radius: 0px 5px 0px 0px;
 }
 
 
