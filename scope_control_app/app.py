@@ -114,7 +114,7 @@ def save_image():
     # get current timestamp
     timestamp = strftime("%Y_%m_%d-%H_%M_%S", localtime())
     filename = f"pics/cap_{uid}_{timestamp}.png"
-    print(f"saving file: {filename}")
+    print(f"saving img file: {filename}")
 
     # Convert BGR to RGB and save the image
     im_rgb = outputFrame.bgr[:, :, [2, 1, 0]]
@@ -157,68 +157,68 @@ def generate():
         yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + bytearray(outputFrame.jpeg_buffer) + b'\r\n')
 
 
+# commandline argument parser
+# ap = argparse.ArgumentParser()
+# ap.add_argument("-i", "--ip", type=str, required=True, help="ip address of the device")
+# ap.add_argument("-o", "--port", type=int, required=True,
+#   help="ephemeral port number of the server (1024 to 65535)")
+# args = vars(ap.parse_args())
+
+# Load scope settings from a JSON File
+with open('scope_settings.json', 'r') as f:
+    uvc_settings = json.load(f)
+
+# UVC Setup
+logging.basicConfig(level=logging.INFO)
+dev_list = uvc.device_list()
+
+# Find the G-Scope device number within all attached devices.
+scopeDeviceId = 0
+for i, device in enumerate(dev_list):
+    print(f"{i}: {device['name']}")
+    if "G-Scope" in device["name"]:
+        scopeDeviceId = i
+
+print(f"G-Scope device id is: {scopeDeviceId}")
+
+# Add G-Scope as new capture device and get its control properties
+cap = uvc.Capture(dev_list[scopeDeviceId]["uid"])
+controls_dict = dict([(c.display_name, c) for c in cap.controls])
+
+print(cap.avaible_modes)
+print("--- Available Controls & Init Values: ---")
+for control in controls_dict:
+    print(f"{control}: {controls_dict[control].value}")
+print("---------------------------")
+
+time.sleep(1)
+
+# Capture one frame to initialize the microscope
+cap.frame_mode = (uvc_settings["video_w"], uvc_settings["video_h"], uvc_settings["video_fps"])
+init_frame = cap.get_frame_robust()
+time.sleep(2)
+
+# Apply Custom Setting to the Scope via UVC
+print("--- Adjusting custom control settings: ---")
+for control in controls_dict:
+    controls_dict[control].value = uvc_settings[control]
+    print(f"{control}: {controls_dict[control].value}")
+print("---------------------------")
+
+time.sleep(1)
+
+# Start a thread that will capture frames from the scope
+t = threading.Thread(target=capture_frame, args=())
+t.daemon = True
+t.start()
+
 if __name__ == '__main__':
-    # commandline argument parser
-    # ap = argparse.ArgumentParser()
-    # ap.add_argument("-i", "--ip", type=str, required=True, help="ip address of the device")
-    # ap.add_argument("-o", "--port", type=int, required=True,
-    #   help="ephemeral port number of the server (1024 to 65535)")
-    # args = vars(ap.parse_args())
-
-    # Load scope settings from a JSON File
-    with open('scope_settings.json', 'r') as f:
-        uvc_settings = json.load(f)
-
-    # UVC Setup
-    logging.basicConfig(level=logging.INFO)
-    dev_list = uvc.device_list()
-
-    # Find the G-Scope device number within all attached devices.
-    scopeDeviceId = 0
-    for i, device in enumerate(dev_list):
-        print(f"{i}: {device['name']}")
-        if "G-Scope" in device["name"]:
-            scopeDeviceId = i
-
-    print(f"G-Scope device id is: {scopeDeviceId}")
-
-    # Add G-Scope as new capture device and get its control properties
-    cap = uvc.Capture(dev_list[scopeDeviceId]["uid"])
-    controls_dict = dict([(c.display_name, c) for c in cap.controls])
-
-    print(cap.avaible_modes)
-    print("--- Available Controls & Init Values: ---")
-    for control in controls_dict:
-        print(f"{control}: {controls_dict[control].value}")
-    print("---------------------------")
-
-    time.sleep(1)
-
-    # Capture one frame to initialize the microscope
-    cap.frame_mode = (uvc_settings["video_w"], uvc_settings["video_h"], uvc_settings["video_fps"])
-    init_frame = cap.get_frame_robust()
-    time.sleep(2)
-
-    # Apply Custom Setting to the Scope via UVC
-    print("--- Adjusting custom control settings: ---")
-    for control in controls_dict:
-        controls_dict[control].value = uvc_settings[control]
-        print(f"{control}: {controls_dict[control].value}")
-    print("---------------------------")
-
-    time.sleep(1)
-
-    # Start a thread that will capture frames from the scope
-    t = threading.Thread(target=capture_frame, args=())
-    t.daemon = True
-    t.start()
-
     # start the flask app
     # app.run(host=args["ip"], port=args["port"], debug=True, threaded=True, use_reloader=False)
     app.run(host='0.0.0.0', port=8000, debug=True, threaded=True, use_reloader=False)
 
 
-print("releasing scope...")
-cap = None
-print("scope released!")
-print("APP CLOSED!")
+# print("releasing scope...")
+# cap = None
+# print("scope released!")
+# print("APP CLOSED!")
