@@ -4,7 +4,6 @@ from flask import render_template
 import json
 
 import argparse
-#import keyboard
 import threading
 import uuid
 import time
@@ -12,9 +11,26 @@ from time import localtime, strftime
 import datetime
 import logging
 
+import spidev as SPI
+import ST7789
+
 import uvc  # >> https://github.com/pupil-labs/pyuvc
+from PIL import Image, ImageDraw, ImageFont
+
+# import keyboard
 # import cv2
-from PIL import Image
+
+# Raspberry Pi pin config:
+RST = 27
+DC = 25
+BL = 24
+bus = 0 
+device = 0
+
+# init 240x240 display with hardware SPI:
+disp = ST7789.ST7789(SPI.SpiDev(bus, device),RST, DC, BL)
+disp.Init()
+disp.clear()
 
 # initialize a flask object
 app = Flask(__name__)
@@ -203,6 +219,14 @@ def init_scope():
 
 logging.basicConfig(level=logging.INFO)
 
+# Create blank image for drawing on display.
+disp_image = Image.new("RGB", (disp.width, disp.height), "BLACK")
+draw = ImageDraw.Draw(disp_image)
+fnt = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSansBold.ttf', 16)
+draw.text((5, 5), 'Conecting to G-Scope...', font=fnt, fill = "WHITE")
+disp.ShowImage(disp_image,0,0)
+
+
 # Load scope settings from a JSON File
 with open('scope_settings.json', 'r') as f:
     uvc_settings = json.load(f)
@@ -218,6 +242,10 @@ print(f"G-Scope device id is: {scopeDeviceId}")
 
 # Connect to the scope...
 init_scope()
+
+draw.text((5, 25), 'G-Scope Online!', font=fnt, fill = "WHITE")
+draw.text((5, 45), 'Please connect to the \n "cap_app" WiFi Network', font=fnt, fill = "WHITE")
+disp.ShowImage(disp_image,0,0)
 
 # Start a thread that will capture frames from the scope
 t = threading.Thread(target=capture_frame, args=())
