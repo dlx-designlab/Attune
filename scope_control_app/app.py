@@ -4,7 +4,7 @@ from flask import render_template
 import json
 
 import argparse
-import keyboard
+#import keyboard
 import threading
 import uuid
 import time
@@ -225,7 +225,7 @@ t.daemon = True
 t.start()
 
 print("Press the S key to Start/Stop Capturing")
-keyboard.on_release_key("s", toggle_capture)
+# keyboard.on_release_key("s", toggle_capture)
 
 
 if __name__ == '__main__':
