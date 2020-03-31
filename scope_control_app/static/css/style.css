@@ -45,7 +45,7 @@ body, html{margin:0; padding:0; border: 0; outline: 0; font-size: 100%; vertical
 
 button {
     border-radius: 30%;
-    padding: 30px;
+    padding: 20px;
     margin: 10px;
 }
 
@@ -53,7 +53,8 @@ button:focus {outline:0;}
 
 .settings-buton{
     border-color: grey;
-    border-width: 0.5em;
+    color: #333;
+    border-width: 0.35em;
     display: block;
     margin-left: 40px;
 }
@@ -67,12 +68,14 @@ button:focus {outline:0;}
 .focus-control-buttons-panel{
     margin: 20px;
     align-items: center;
-/*    background-color: rgba(10,10,10,0.5);*/
+    max-width: 120px;
+/*    background-color: rgba(255,255,255,0.5);*/
 }
 
 .focus-control-button{
     border-color: grey;
-    border-width: 0.5em;
+    color: #333;
+    border-width: 0.35em;
     display: block;
 }
 
@@ -81,8 +84,7 @@ button:focus {outline:0;}
     color: white;
     background-color: crimson;
     border-color: pink;
-    font-size: 0.8em;
-    border-width: 0.8em;
+    border-width: 0.35em;
 }
 
 .settings-panel{

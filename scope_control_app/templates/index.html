@@ -16,15 +16,11 @@
 
     <link rel="icon" href="{{ url_for('static', filename='img/icon-96.png') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/font_awesome.css') }}">
 
 <!--      <link rel="manifest" href="../static/manifest.json"> -->
 <!--     <link rel="stylesheet" type="text/css" href="../static/css/style.css"> -->
- 
-
-</head>
-
-<body>
-
+<!--     <link rel="stylesheet" type="text/css" href="../static/css/font_awesome.css"> -->
 
 <style>
   .bgimg {
@@ -41,9 +37,13 @@
     position:relative;
   }
 </style>
+</head>
+
+<body>
+
 <div class="bgimg">
     
-    <button id="settingsBtn" class="settings-buton w3-display-left">SET</button>
+    <button id="settingsBtn" class="settings-buton w3-display-left fas fa-cog fa-2x"></button>
 
     <div id="settingsPanel" class="settings-panel w3-display-left">
         
@@ -96,13 +96,13 @@
     </div>
 
   <div class="focus-control-buttons-panel w3-display-right">
-      <button class="focus-control-button" onclick="set_scope_control('Absolute Focus', 1)"> F+ </button>
-      <button class="focus-control-button" onclick="set_scope_control('Auto Focus', 1)">AF</button>
-      <button class="focus-control-button" onclick="set_scope_control('Absolute Focus', -1)"> F- </button>
+      <button class="focus-control-button fas fa-plus fa-2x" onclick="set_scope_control('Absolute Focus', 1)"> </button>
+      <button class="focus-control-button fas fa-bullseye fa-2x" onclick="set_scope_control('Auto Focus', 1)"> </button>
+      <button class="focus-control-button fas fa-minus fa-2x" onclick="set_scope_control('Absolute Focus', -1)"> </button>
   </div>
 
   <div class="w3-display-bottommiddle">
-      <button class="record-button"  onclick="save_scope_image()">REC</button>
+      <button class="record-button fas fa-camera fa-2x"  onclick="save_scope_image()"></button>
   </div>
 
   <div class="uid w3-display-bottomleft">
