@@ -11,26 +11,57 @@ from time import localtime, strftime
 import datetime
 import logging
 
+# Imports to use with the Raspberry Pi 1.3" Display Hat
 import spidev as SPI
 import ST7789
-
-import uvc  # >> https://github.com/pupil-labs/pyuvc
+import RPi.GPIO as GPIO
 from PIL import Image, ImageDraw, ImageFont
+
+# Camera UVC Properties control library
+import uvc  # >> https://github.com/pupil-labs/pyuvc
 
 # import keyboard
 # import cv2
 
 # Raspberry Pi pin config:
+RST_PIN        = 25
+CS_PIN         = 8
+DC_PIN         = 24
+
+KEY_UP_PIN     = 6 
+KEY_DOWN_PIN   = 19
+KEY_LEFT_PIN   = 5
+KEY_RIGHT_PIN  = 26
+KEY_PRESS_PIN  = 13
+
+KEY1_PIN       = 21
+KEY2_PIN       = 20
+KEY3_PIN       = 16
+
 RST = 27
 DC = 25
 BL = 24
-bus = 0 
+bus = 0
 device = 0
 
 # init 240x240 display with hardware SPI:
 disp = ST7789.ST7789(SPI.SpiDev(bus, device),RST, DC, BL)
 disp.Init()
 disp.clear()
+
+#init GPIO
+# for P4:
+# sudo vi /boot/config.txt
+# gpio=6,19,5,26,13,21,20,16=pu
+GPIO.setmode(GPIO.BCM) 
+GPIO.setup(KEY_UP_PIN,      GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+GPIO.setup(KEY_DOWN_PIN,    GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+GPIO.setup(KEY_LEFT_PIN,    GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+GPIO.setup(KEY_RIGHT_PIN,   GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+GPIO.setup(KEY_PRESS_PIN,   GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+GPIO.setup(KEY1_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+GPIO.setup(KEY2_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+GPIO.setup(KEY3_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
 
 # initialize a flask object
 app = Flask(__name__)
@@ -168,7 +199,7 @@ def generate():
             yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + placeholderImage + b'\r\n')
 
 
-def toggle_capture(e):
+def toggle_capture():
     global isCapturing, cap
 
     if not isCapturing:
@@ -178,11 +209,58 @@ def toggle_capture(e):
     else:
         isCapturing = False
         cap = None
-        print("Stopped Capturing!")
+        print("Stopped Capturing!")        
+        # Update LCD Display
+        draw.rectangle([(0,0),(240,240)],fill = "BLACK")
+        draw.text((5, 100), 'Scope is OFF', font=fnt, fill = "WHITE")
+        img = disp_image.rotate(90)
+        disp.ShowImage(img,0,0)
+
+        
+
+def get_keypress():
+    
+    key_a_pressed = False
+    key_b_pressed = False
+    key_c_pressed = False
+    
+   # try:
+    while 1:            
+        if GPIO.input(KEY1_PIN): # button is released
+            key_a_pressed = False
+        elif not key_a_pressed: # button is pressed:
+            key_a_pressed = True
+            print("KEY-A")
+        
+        # Key B: Turns the scope on or off
+        if GPIO.input(KEY2_PIN): # button is released
+            key_b_pressed = False
+        elif not key_b_pressed: # button is pressed:
+            key_b_pressed = True
+            toggle_capture()
+            print("KEY-B")            
+
+        if GPIO.input(KEY3_PIN): # button is released
+            key_c_pressed = False
+        elif not key_c_pressed: # button is pressed:
+            key_c_pressed = True
+            print("KEY-C")
+
+#    except:
+ #       print("except")
+    
+  #  GPIO.cleanup()
+    
 
 
 def init_scope():
     global cap, uvc_settings, controls_dict, dev_list, scopeDeviceId
+    
+    # Update LCD Display
+    draw.rectangle([(0,0),(240,240)],fill = "BLACK")
+    draw.text((5, 5), 'Conecting to G-Scope...', font=fnt, fill = "WHITE")
+    img = disp_image.rotate(90)
+    disp.ShowImage(img,0,0)
 
     # Add G-Scope as new capture device and get its control properties
     cap = uvc.Capture(dev_list[scopeDeviceId]["uid"])
@@ -207,6 +285,13 @@ def init_scope():
     # Capture one frame to initialize the microscope
     cap.frame_mode = (uvc_settings["video_w"], uvc_settings["video_h"], uvc_settings["video_fps"])
     cap.get_frame_robust()
+    
+    # Update LCD Display
+    draw.text((5, 25), 'G-Scope Online!', font=fnt, fill = "WHITE")
+    draw.text((5, 100), '1. Connect to the \n "scoPi" WiFi \n\n 2. Goto: \n http://192.168.4.1:8000', font=fnt, fill = "WHITE")
+    img = disp_image.rotate(90)
+    disp.ShowImage(img,0,0)    
+    
     time.sleep(1)
 
 
@@ -220,11 +305,10 @@ def init_scope():
 logging.basicConfig(level=logging.INFO)
 
 # Create blank image for drawing on display.
+disp.clear()
 disp_image = Image.new("RGB", (disp.width, disp.height), "BLACK")
 draw = ImageDraw.Draw(disp_image)
 fnt = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSansBold.ttf', 16)
-draw.text((5, 5), 'Conecting to G-Scope...', font=fnt, fill = "WHITE")
-disp.ShowImage(disp_image,0,0)
 
 
 # Load scope settings from a JSON File
@@ -243,17 +327,18 @@ print(f"G-Scope device id is: {scopeDeviceId}")
 # Connect to the scope...
 init_scope()
 
-draw.text((5, 25), 'G-Scope Online!', font=fnt, fill = "WHITE")
-draw.text((5, 45), 'Please connect to the \n "cap_app" WiFi Network', font=fnt, fill = "WHITE")
-disp.ShowImage(disp_image,0,0)
 
 # Start a thread that will capture frames from the scope
-t = threading.Thread(target=capture_frame, args=())
-t.daemon = True
-t.start()
+capture_thread = threading.Thread(target=capture_frame, args=())
+capture_thread.daemon = True
+capture_thread.start()
+
+# Start a thread that will capture button press on the PI LCD Screen Hat
+keypress_thread = threading.Thread(target=get_keypress, args=())
+keypress_thread.daemon = True
+keypress_thread.start()
 
 print("Press the S key to Start/Stop Capturing")
-# keyboard.on_release_key("s", toggle_capture)
 
 
 if __name__ == '__main__':
