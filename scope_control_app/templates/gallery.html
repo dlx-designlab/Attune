@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scope Capture App - Gallery</title>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, shrink-to-fit=no">
+    <meta name="description" content="Scope Capture App">
+    
+    <!-- iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/icon-96.png') }}">
+    
+    <!-- Chrome Web app manifest -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+
+    <link rel="icon" href="{{ url_for('static', filename='img/icon-96.png') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/font_awesome.css') }}">
+
+<!--      <link rel="manifest" href="../static/manifest.json"> -->
+<!--     <link rel="stylesheet" type="text/css" href="../static/css/style.css"> -->
+<!--     <link rel="stylesheet" type="text/css" href="../static/css/font_awesome.css"> -->
+
+<style>
+
+  /* Add a hover effect (blue shadow) */
+  img:hover {
+    box-shadow: 0 0 2px 1px rgba(0, 140, 186, 0.5);
+  }
+
+</style>
+</head>
+
+<body>
+
+<div class="img-gallery">
+  
+  {% for image in images %}
+    <div class="gallery-thumb">
+      <a target="_blank" href="{{ url_for('static', filename='captured_pics/' + userId + '/' + image) }}">
+        <img src="{{ url_for('static', filename='captured_pics/' + userId + '/' + image) }}">
+        <div>{{ image }}</div>
+      </a>
+    </div>
+  {% endfor %}
+  
+</div>
+
+<div class="uid w3-display-bottomleft">
+      <p>UID: {{ userId }}</p>
+</div>
+
+
+<!-- JS SCRIPTS -->
+<!-- <script src="../static/scripts/jquery.min.js"></script> -->
+<script src="{{ url_for('static', filename='scripts/jquery.min.js') }}"></script>
+
+</body>
+</html>

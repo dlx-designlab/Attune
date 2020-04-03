@@ -42,8 +42,10 @@
 <body>
 
 <div class="bgimg">
-    
-    <button id="settingsBtn" class="settings-buton w3-display-left fas fa-cog fa-2x"></button>
+    <div class="buttons-panel w3-display-left">
+      <button id="settingsBtn" class="settings-button fas fa-cog fa-2x"></button>
+      <button class="gallery-button fas fa-images fa-2x" onclick="window.location.href = '/img_gallery';"></button>
+    </div>
 
     <div id="settingsPanel" class="settings-panel w3-display-left">
         
@@ -95,7 +97,7 @@
 
     </div>
 
-  <div class="focus-control-buttons-panel w3-display-right">
+  <div class="buttons-panel w3-display-right">
       <button class="focus-control-button fas fa-plus fa-2x" onclick="set_scope_control('Absolute Focus', 1)"> </button>
       <button class="focus-control-button fas fa-bullseye fa-2x" onclick="set_scope_control('Auto Focus', 1)"> </button>
       <button class="focus-control-button fas fa-minus fa-2x" onclick="set_scope_control('Absolute Focus', -1)"> </button>

@@ -51,12 +51,18 @@ button {
 
 button:focus {outline:0;}
 
-.settings-buton{
+.settings-button{
     border-color: grey;
     color: #333;
     border-width: 0.35em;
     display: block;
-    margin-left: 40px;
+}
+
+.gallery-button{
+    border-color: grey;
+    color: #333;
+    border-width: 0.35em;
+    display: block;
 }
 
 .title{
@@ -65,7 +71,7 @@ button:focus {outline:0;}
 
 }
 
-.focus-control-buttons-panel{
+.buttons-panel{
     margin: 20px;
     align-items: center;
     max-width: 120px;
@@ -136,6 +142,31 @@ button:focus {outline:0;}
     color: white;
     font-size: 0.8em;
     border-radius: 0px 5px 0px 0px;
+    z-index: 1;
+}
+
+.img-gallery{
+    background-color: #e5e5e5;
+    position:relative;
+    overflow: scroll;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.gallery-thumb{
+    font-size: 0.5em;
+    margin: 5px;
+    padding: 5px;
+    text-align: center;
+    background-color: pink;
+    border: 3px solid #ddd;
+    border-radius: 10px;
+    display: inline-block;
+}
+
+.gallery-thumb img{
+    width: 300px;
 }
 
 
