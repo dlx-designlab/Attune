@@ -163,10 +163,11 @@ button:focus {outline:0;}
     border: 3px solid #ddd;
     border-radius: 10px;
     display: inline-block;
+    max-width: 30%;
 }
 
 .gallery-thumb img{
-    width: 230px;
+    width: 100%;
 }
 
 
