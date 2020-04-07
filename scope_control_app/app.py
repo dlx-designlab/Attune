@@ -15,9 +15,9 @@ from os import listdir
 from os.path import isfile, join
 
 # Imports to use with the Raspberry Pi 1.3" Display Hat
-# import spidev as SPI
-# import ST7789
-# import RPi.GPIO as GPIO
+import spidev as SPI
+import ST7789
+import RPi.GPIO as GPIO
 from PIL import Image, ImageDraw, ImageFont
 
 
@@ -29,41 +29,41 @@ import uvc  # >> https://github.com/pupil-labs/pyuvc
 # import cv2
 
 # Raspberry Pi pin config:
-# RST_PIN        = 25
-# CS_PIN         = 8
-# DC_PIN         = 24
-#
-# KEY_UP_PIN     = 6
-# KEY_DOWN_PIN   = 19
-# KEY_LEFT_PIN   = 5
-# KEY_RIGHT_PIN  = 26
-# KEY_PRESS_PIN  = 13
-#
-# KEY1_PIN       = 21
-# KEY2_PIN       = 20
-# KEY3_PIN       = 16
-#
-# RST = 27
-# DC = 25
-# BL = 24
-# bus = 0
-# device = 0
+RST_PIN        = 25
+CS_PIN         = 8
+DC_PIN         = 24
+
+KEY_UP_PIN     = 6
+KEY_DOWN_PIN   = 19
+KEY_LEFT_PIN   = 5
+KEY_RIGHT_PIN  = 26
+KEY_PRESS_PIN  = 13
+
+KEY1_PIN       = 21
+KEY2_PIN       = 20
+KEY3_PIN       = 16
+
+RST = 27
+DC = 25
+BL = 24
+bus = 0
+device = 0
 
 # init 240x240 display with hardware SPI:
-# disp = ST7789.ST7789(SPI.SpiDev(bus, device),RST, DC, BL)
-# disp.Init()
-# disp.clear()
+disp = ST7789.ST7789(SPI.SpiDev(bus, device),RST, DC, BL)
+disp.Init()
+disp.clear()
 
-#init GPIO
-# GPIO.setmode(GPIO.BCM)
-# GPIO.setup(KEY_UP_PIN,      GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-# GPIO.setup(KEY_DOWN_PIN,    GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-# GPIO.setup(KEY_LEFT_PIN,    GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-# GPIO.setup(KEY_RIGHT_PIN,   GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-# GPIO.setup(KEY_PRESS_PIN,   GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-# GPIO.setup(KEY1_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-# GPIO.setup(KEY2_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-# GPIO.setup(KEY3_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+# init GPIO
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(KEY_UP_PIN,      GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+GPIO.setup(KEY_DOWN_PIN,    GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+GPIO.setup(KEY_LEFT_PIN,    GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+GPIO.setup(KEY_RIGHT_PIN,   GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+GPIO.setup(KEY_PRESS_PIN,   GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+GPIO.setup(KEY1_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+GPIO.setup(KEY2_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+GPIO.setup(KEY3_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
 
 # initialize a flask object
 app = Flask(__name__)
@@ -230,10 +230,10 @@ def toggle_capture():
         cap = None
         print("Stopped Capturing!")        
         # Update LCD Display
-        # draw.rectangle([(0,0),(240,240)],fill = "BLACK")
-        # draw.text((5, 100), 'Scope is OFF', font=fnt, fill = "WHITE")
-        # img = disp_image.rotate(90)
-        # disp.ShowImage(img,0,0)
+        draw.rectangle([(0,0),(240,240)],fill = "BLACK")
+        draw.text((5, 100), 'Scope is OFF', font=fnt, fill = "WHITE")
+        img = disp_image.rotate(90)
+        disp.ShowImage(img,0,0)
 
         
 
@@ -277,10 +277,10 @@ def init_scope():
     global cap, uvc_settings, controls_dict, dev_list, scopeDeviceId
     
     # Update LCD Display
-    # draw.rectangle([(0,0),(240,240)],fill = "BLACK")
-    # draw.text((5, 5), 'Conecting to G-Scope...', font=fnt, fill = "WHITE")
-    # img = disp_image.rotate(90)
-    # disp.ShowImage(img,0,0)
+    draw.rectangle([(0,0),(240,240)],fill = "BLACK")
+    draw.text((5, 5), 'Conecting to G-Scope...', font=fnt, fill = "WHITE")
+    img = disp_image.rotate(90)
+    disp.ShowImage(img,0,0)
 
     # Add G-Scope as new capture device and get its control properties
     cap = uvc.Capture(dev_list[scopeDeviceId]["uid"])
@@ -307,10 +307,10 @@ def init_scope():
     cap.get_frame_robust()
     
     # Update LCD Display
-    # draw.text((5, 25), 'G-Scope Online!', font=fnt, fill = "WHITE")
-    # draw.text((5, 100), '1. Connect to the \n "scoPi" WiFi \n\n 2. Goto: \n http://192.168.4.1:8000', font=fnt, fill = "WHITE")
-    # img = disp_image.rotate(90)
-    # disp.ShowImage(img,0,0)
+    draw.text((5, 25), 'G-Scope Online!', font=fnt, fill = "WHITE")
+    draw.text((5, 100), '1. Connect to the \n "scoPi" WiFi \n\n 2. Goto: \n http://192.168.4.1:8000', font=fnt, fill = "WHITE")
+    img = disp_image.rotate(90)
+    disp.ShowImage(img,0,0)
     
     time.sleep(1)
 
@@ -325,10 +325,10 @@ def init_scope():
 logging.basicConfig(level=logging.INFO)
 
 # Create blank image for drawing on display.
-# disp.clear()
-# disp_image = Image.new("RGB", (disp.width, disp.height), "BLACK")
-# draw = ImageDraw.Draw(disp_image)
-# fnt = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSansBold.ttf', 16)
+disp.clear()
+disp_image = Image.new("RGB", (disp.width, disp.height), "BLACK")
+draw = ImageDraw.Draw(disp_image)
+fnt = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSansBold.ttf', 16)
 
 
 # Load scope settings from a JSON File

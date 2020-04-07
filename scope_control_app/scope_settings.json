@@ -7,12 +7,12 @@
 "White Balance temperature,Auto": 0,
 "Absolute Focus": 100,
 "White Balance temperature": 6000,
-"Backlight Compensation": 4,
+"Backlight Compensation": 0,
 "Brightness": 50,
-"Contrast": 105,
+"Contrast": 160,
 "Gain": 0,
 "Power Line frequency": 1,
 "Hue": 0,
-"Saturation": 240,
+"Saturation": 250,
 "Gamma": 100
 }
