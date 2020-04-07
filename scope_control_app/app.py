@@ -307,8 +307,8 @@ def init_scope():
     cap.get_frame_robust()
     
     # Update LCD Display
-    draw.text((5, 25), 'G-Scope Online!', font=fnt, fill = "WHITE")
-    draw.text((5, 100), '1. Connect to the \n "scoPi" WiFi \n\n 2. Goto: \n http://192.168.4.1:8000', font=fnt, fill = "WHITE")
+    draw.text((5, 30), 'G-Scope Online!', font=fnt, fill = "WHITE")
+    draw.text((5, 100), '1. Connect to WiFi \n ssid: "scoPi" \n\n 2. Browse to: \n 192.168.4.1:8000', font=fnt, fill = "WHITE")
     img = disp_image.rotate(90)
     disp.ShowImage(img,0,0)
     
@@ -328,7 +328,7 @@ logging.basicConfig(level=logging.INFO)
 disp.clear()
 disp_image = Image.new("RGB", (disp.width, disp.height), "BLACK")
 draw = ImageDraw.Draw(disp_image)
-fnt = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSansBold.ttf', 16)
+fnt = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSansBold.ttf', 20)
 
 
 # Load scope settings from a JSON File
