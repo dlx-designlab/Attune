@@ -198,10 +198,13 @@
 
     // Capture Scope image
     function save_scope_image(){
+      var timeStamp = new Date().getTime();
+
       $.ajax({
           type: 'POST',
           url: "/save_image",
           contentType: 'application/json;charset=UTF-8',
+          data: JSON.stringify({'timestamp': timeStamp}),
           success: function(result) {
                 document.getElementById("status").innerHTML = result;
           },

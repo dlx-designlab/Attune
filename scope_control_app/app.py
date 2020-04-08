@@ -8,7 +8,7 @@ import threading
 import uuid
 import time
 from time import localtime, strftime
-import datetime
+from datetime import datetime
 import logging
 from pathlib import Path
 from os import listdir
@@ -143,6 +143,7 @@ def set_ctrl():
 # Save an image file to the server
 @app.route('/save_image', methods=['POST'])
 def save_image():
+    
 
     if isCapturing:
         # get User Id from cookie
@@ -153,8 +154,13 @@ def save_image():
         Path(f"static/captured_pics/{uid}").mkdir(parents=True, exist_ok=True)
 
         # get current timestamp
-        timestamp = strftime("%Y_%m_%d-%H_%M_%S", localtime())
-        filename = f"static/captured_pics/{uid}/cap_{uid}_{timestamp}.png"
+        # timestamp = strftime("%Y_%m_%d-%H_%M_%S", localtime())
+        req_data = request.get_json()
+        time_stamp = int(req_data['timestamp'] / 1000)
+        dt = datetime.fromtimestamp(time_stamp)
+        date_string = f"{dt.year}_{dt.month}_{dt.day}-{dt.hour}_{dt.minute}_{dt.second}"
+        
+        filename = f"static/captured_pics/{uid}/cap_{uid}_{date_string}.png"
         print(f"saving img file: {filename}")
 
         # Convert BGR to RGB and save the image
@@ -357,8 +363,7 @@ capture_thread.start()
 # keypress_thread = threading.Thread(target=get_keypress, args=())
 # keypress_thread.daemon = True
 # keypress_thread.start()
-
-print("Press the S key to Start/Stop Capturing")
+# print("Press the S key to Start/Stop Capturing")
 
 
 if __name__ == '__main__':
