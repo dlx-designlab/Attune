@@ -152,8 +152,8 @@ def save_image():
         req_data = request.get_json()
         time_stamp = int(req_data['timestamp'] / 1000)
         dt = datetime.fromtimestamp(time_stamp)
-        date_string = f"{dt.year}_{dt.month:02d}_{dt.day:02d}-{dt.hour:02d}_{dt.minute:02d}_{dt.second:02d}"
-        
+        date_string = f"{dt.year}-{dt.month:02d}-{dt.day:02d}_{dt.hour:02d}-{dt.minute:02d}-{dt.second:02d}"
+
         filename = f"static/captured_pics/{uid}/cap_{uid}_{date_string}.png"
         print(f"saving img file: {filename}")
 
