@@ -1,69 +1,64 @@
-from flask import Response, send_file
-from flask import Flask, jsonify, redirect, url_for, request, make_response
-from flask import render_template
-import json
-
 import argparse
-import threading
-import uuid
-import time
-from time import localtime, strftime
-from datetime import datetime
+import json
 import logging
-from pathlib import Path
+import threading
+import time
+import uuid
+from datetime import datetime
 from os import listdir
 from os.path import isfile, join
-
-# Imports to use with the Raspberry Pi 1.3" Display Hat
-import spidev as SPI
-import ST7789
-import RPi.GPIO as GPIO
-from PIL import Image, ImageDraw, ImageFont
-
-
-
-# Camera UVC Properties control library
-import uvc  # >> https://github.com/pupil-labs/pyuvc
+from pathlib import Path
+from time import localtime, strftime
 
 # import keyboard
-# import cv2
+import cv2
+# Camera UVC Properties control library
+import uvc  # >> https://github.com/pupil-labs/pyuvc
+from flask import (Flask, Response, jsonify, make_response, redirect,
+                   render_template, request, send_file, url_for)
+
+# Imports to use with the Raspberry Pi 1.3" Display Hat
+# import spidev as SPI
+# import ST7789
+# import RPi.GPIO as GPIO
+# from PIL import Image, ImageDraw, ImageFont
 
 # Raspberry Pi pin config:
-RST_PIN        = 25
-CS_PIN         = 8
-DC_PIN         = 24
+# RST_PIN        = 25
+# CS_PIN         = 8
+# DC_PIN         = 24
 
-KEY_UP_PIN     = 6
-KEY_DOWN_PIN   = 19
-KEY_LEFT_PIN   = 5
-KEY_RIGHT_PIN  = 26
-KEY_PRESS_PIN  = 13
+# KEY_UP_PIN     = 6
+# KEY_DOWN_PIN   = 19
+# KEY_LEFT_PIN   = 5
+# KEY_RIGHT_PIN  = 26
+# KEY_PRESS_PIN  = 13
 
-KEY1_PIN       = 21
-KEY2_PIN       = 20
-KEY3_PIN       = 16
+# KEY1_PIN       = 21
+# KEY2_PIN       = 20
+# KEY3_PIN       = 16
 
-RST = 27
-DC = 25
-BL = 24
-bus = 0
-device = 0
+# RST = 27
+# DC = 25
+# BL = 24
+# bus = 0
+# device = 0
 
 # init 240x240 display with hardware SPI:
-disp = ST7789.ST7789(SPI.SpiDev(bus, device),RST, DC, BL)
-disp.Init()
-disp.clear()
+# disp = ST7789.ST7789(SPI.SpiDev(bus, device),RST, DC, BL)
+# disp.Init()
+# disp.clear()
 
 # init GPIO
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(KEY_UP_PIN,      GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-GPIO.setup(KEY_DOWN_PIN,    GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-GPIO.setup(KEY_LEFT_PIN,    GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-GPIO.setup(KEY_RIGHT_PIN,   GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-GPIO.setup(KEY_PRESS_PIN,   GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-GPIO.setup(KEY1_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-GPIO.setup(KEY2_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-GPIO.setup(KEY3_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+# GPIO.setmode(GPIO.BCM)
+# GPIO.setup(KEY_UP_PIN,      GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+# GPIO.setup(KEY_DOWN_PIN,    GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+# GPIO.setup(KEY_LEFT_PIN,    GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+# GPIO.setup(KEY_RIGHT_PIN,   GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+# GPIO.setup(KEY_PRESS_PIN,   GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+# GPIO.setup(KEY1_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+# GPIO.setup(KEY2_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+# GPIO.setup(KEY3_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
 
 # initialize a flask object
 app = Flask(__name__)
@@ -144,7 +139,6 @@ def set_ctrl():
 @app.route('/save_image', methods=['POST'])
 def save_image():
     
-
     if isCapturing:
         # get User Id from cookie
         cookies = request.cookies
@@ -158,16 +152,17 @@ def save_image():
         req_data = request.get_json()
         time_stamp = int(req_data['timestamp'] / 1000)
         dt = datetime.fromtimestamp(time_stamp)
-        date_string = f"{dt.year}_{dt.month}_{dt.day}-{dt.hour}_{dt.minute}_{dt.second}"
+        date_string = f"{dt.year}_{dt.month:02d}_{dt.day:02d}-{dt.hour:02d}_{dt.minute:02d}_{dt.second:02d}"
         
         filename = f"static/captured_pics/{uid}/cap_{uid}_{date_string}.png"
         print(f"saving img file: {filename}")
 
         # Convert BGR to RGB and save the image
-        im_rgb = outputFrame.bgr[:, :, [2, 1, 0]]
-        Image.fromarray(im_rgb).save(filename)
-        # cv2.imwrite(filename, outputFrame.bgr)
-        res = "file saved!"
+        # im_rgb = outputFrame.bgr[:, :, [2, 1, 0]]
+        # Image.fromarray(im_rgb).save(filename)
+        with lock:
+            cv2.imwrite(filename, outputFrame.bgr)
+            res = "file saved!"
     else:
         res = "could not save!"
 
@@ -186,10 +181,11 @@ def img_gallery():
     cookies = request.cookies
     uid = cookies.get("scan_uuid")
 
-    userFilesPath = f"static/captured_pics/{uid}"
-    filesList = [f for f in listdir(userFilesPath) if isfile(join(userFilesPath, f))]
+    user_files_path = f"static/captured_pics/{uid}"
+    files_list = [f for f in listdir(user_files_path) if isfile(join(user_files_path, f))]
+    files_list.sort(reverse=True)
 
-    return render_template('gallery.html', userId=uid, images=filesList)
+    return render_template('gallery.html', userId=uid, images=files_list)
 
 
 # Captures frames in the background (in a separate thread)
@@ -211,7 +207,7 @@ def generate():
     global outputFrame, lock, isCapturing
 
     # An image to display when the scope is off
-    placeholderImage = open("static/img/scope_off.jpg", "rb").read()
+    placeholder_image = open("static/img/scope_off.jpg", "rb").read()
 
     while True:
         with lock:
@@ -219,12 +215,13 @@ def generate():
                 continue
 
         if isCapturing:
-            yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + bytearray(outputFrame.jpeg_buffer) + b'\r\n')
+            yield b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + bytearray(outputFrame.jpeg_buffer) + b'\r\n'
         else:
-            yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + placeholderImage + b'\r\n')
+            yield b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + placeholder_image + b'\r\n'
 
 
-def toggle_capture():
+# Switching between scope capture on and off
+def toggle_capture():    
     global isCapturing, cap
 
     if not isCapturing:
@@ -236,11 +233,10 @@ def toggle_capture():
         cap = None
         print("Stopped Capturing!")        
         # Update LCD Display
-        draw.rectangle([(0,0),(240,240)],fill = "BLACK")
-        draw.text((5, 100), 'Scope is OFF', font=fnt, fill = "WHITE")
-        img = disp_image.rotate(90)
-        disp.ShowImage(img,0,0)
-
+        # draw.rectangle([(0,0),(240,240)],fill = "BLACK")
+        # draw.text((5, 100), 'Scope is OFF', font=fnt, fill = "WHITE")
+        # img = disp_image.rotate(90)
+        # disp.ShowImage(img,0,0)
         
 
 # def get_keypress():
@@ -276,17 +272,16 @@ def toggle_capture():
 #  #       print("except")
 #
 #   #  GPIO.cleanup()
-    
 
 
 def init_scope():
     global cap, uvc_settings, controls_dict, dev_list, scopeDeviceId
     
     # Update LCD Display
-    draw.rectangle([(0,0),(240,240)],fill = "BLACK")
-    draw.text((5, 5), 'Conecting to G-Scope...', font=fnt, fill = "WHITE")
-    img = disp_image.rotate(90)
-    disp.ShowImage(img,0,0)
+    # draw.rectangle([(0,0),(240,240)],fill = "BLACK")
+    # draw.text((5, 5), 'Conecting to G-Scope...', font=fnt, fill = "WHITE")
+    # img = disp_image.rotate(90)
+    # disp.ShowImage(img,0,0)
 
     # Add G-Scope as new capture device and get its control properties
     cap = uvc.Capture(dev_list[scopeDeviceId]["uid"])
@@ -313,11 +308,11 @@ def init_scope():
     cap.get_frame_robust()
     
     # Update LCD Display
-    draw.text((5, 30), 'G-Scope Online!', font=fnt, fill = "WHITE")
-    draw.text((5, 100), '1. Connect to WiFi \n ssid: "scoPi" \n\n 2. Browse to: \n 192.168.4.1:8000', font=fnt, fill = "WHITE")
-    img = disp_image.rotate(90)
-    disp.ShowImage(img,0,0)
-    
+    # draw.text((5, 30), 'G-Scope Online!', font=fnt, fill = "WHITE")
+    # draw.text((5, 100), '1. Connect to WiFi \n ssid: "scoPi" \n\n 2. Browse to: \n 192.168.4.1:8000', font=fnt, fill = "WHITE")
+    # img = disp_image.rotate(90)
+    # disp.ShowImage(img,0,0)
+
     time.sleep(1)
 
 
@@ -331,10 +326,10 @@ def init_scope():
 logging.basicConfig(level=logging.INFO)
 
 # Create blank image for drawing on display.
-disp.clear()
-disp_image = Image.new("RGB", (disp.width, disp.height), "BLACK")
-draw = ImageDraw.Draw(disp_image)
-fnt = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSansBold.ttf', 20)
+# disp.clear()
+# disp_image = Image.new("RGB", (disp.width, disp.height), "BLACK")
+# draw = ImageDraw.Draw(disp_image)
+# fnt = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSansBold.ttf', 20)
 
 
 # Load scope settings from a JSON File

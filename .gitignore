@@ -100,4 +100,7 @@ target/
 .DS_Store
 .AppleDouble
 .LSOverride
-scope_control_app/pics/
+
+#VS Code
+.pylintrc
+.vscode/
