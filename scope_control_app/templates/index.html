@@ -42,6 +42,9 @@
 <body>
 
 <div class="bgimg">
+    
+    <div id="captureIndicator" class="capture-indicator w3-display-topmiddle">CAPTURING!!</div>
+    
     <div class="buttons-panel w3-display-left">
       <button id="settingsBtn" class="settings-button fas fa-cog fa-2x"></button>
       <button class="gallery-button fas fa-images fa-2x" onclick="window.location.href = '/img_gallery';"></button>
@@ -104,8 +107,10 @@
   </div>
 
   <div class="w3-display-bottommiddle">
-      <button class="record-button fas fa-camera fa-2x"  onclick="save_scope_image()"></button>
+      <button class="record-button fas fa-camera fa-2x"  onclick="capture_scope_feed('/save_image')"></button>
+      <button class="record-button fas fa-video fa-2x"  onclick="capture_scope_feed('/save_vid')"></button>      
   </div>
+
 
   <div class="uid w3-display-bottomleft">
       <p>UID: {{ userId }}</p>
@@ -197,21 +202,27 @@
     };
 
     // Capture Scope image
-    function save_scope_image(){
+    function capture_scope_feed(capture_path){
       var timeStamp = new Date().getTime();
+      var captureIndicator = document.getElementById("captureIndicator");
+      
+      captureIndicator.style.display = "block";
 
       $.ajax({
           type: 'POST',
-          url: "/save_image",
+          url: capture_path,
           contentType: 'application/json;charset=UTF-8',
           data: JSON.stringify({'timestamp': timeStamp}),
           success: function(result) {
                 document.getElementById("status").innerHTML = result;
+                captureIndicator.style.display = "none";
           },
           error: function(result) {
                 document.getElementById("status").innerHTML = "ERROR!";
+                captureIndicator.style.display = "none";
           }
       });
+
     }
 
 

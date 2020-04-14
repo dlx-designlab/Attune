@@ -70,6 +70,7 @@ outputFrame = None
 isCapturing = True
 cap = None
 focus = 100
+CAP_FPS = 20
 
 
 @app.route("/")
@@ -138,23 +139,9 @@ def set_ctrl():
 # Save an image file to the server
 @app.route('/save_image', methods=['POST'])
 def save_image():
-    
+
     if isCapturing:
-        # get User Id from cookie
-        cookies = request.cookies
-        uid = cookies.get("scan_uuid")
-
-        # Check if a directory with current UID exists, if not create one
-        Path(f"static/captured_pics/{uid}").mkdir(parents=True, exist_ok=True)
-
-        # get current timestamp
-        # timestamp = strftime("%Y_%m_%d-%H_%M_%S", localtime())
-        req_data = request.get_json()
-        time_stamp = int(req_data['timestamp'] / 1000)
-        dt = datetime.fromtimestamp(time_stamp)
-        date_string = f"{dt.year}-{dt.month:02d}-{dt.day:02d}_{dt.hour:02d}-{dt.minute:02d}-{dt.second:02d}"
-
-        filename = f"static/captured_pics/{uid}/cap_{uid}_{date_string}.png"
+        filename = make_file_name(request.get_json(), "png")
         print(f"saving img file: {filename}")
 
         # Convert BGR to RGB and save the image
@@ -163,6 +150,33 @@ def save_image():
         with lock:
             cv2.imwrite(filename, outputFrame.bgr)
             res = "file saved!"
+    else:
+        res = "could not save!"
+
+    print(res)
+    return res
+
+
+# Capture a short video
+@app.route('/save_vid', methods=['POST'])
+def save_video():
+
+    # how long is the captured video (in frames)
+    frames_to_capture = 80
+
+    if isCapturing:
+        filename = make_file_name(request.get_json(), "mkv")
+        print(f"saving vid file: {filename}")
+
+        out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'X264'), CAP_FPS, (1280, 720))
+
+        for i in range(frames_to_capture):
+            time.sleep(1 / CAP_FPS)
+            with lock:
+                out.write(outputFrame.bgr)            
+
+        out.release()
+        res = "file saved!"
     else:
         res = "could not save!"
 
@@ -188,6 +202,25 @@ def img_gallery():
     return render_template('gallery.html', userId=uid, images=files_list)
 
 
+def make_file_name(req_data, file_ext):
+    # get User Id from cookie
+    cookies = request.cookies
+    uid = cookies.get("scan_uuid")
+
+    # Check if a directory with current UID exists, if not create one
+    Path(f"static/captured_pics/{uid}").mkdir(parents=True, exist_ok=True)
+
+    # get current timestamp
+    time_stamp = int(req_data['timestamp'] / 1000)
+    dt = datetime.fromtimestamp(time_stamp)
+    date_string = f"{dt.year}-{dt.month:02d}-{dt.day:02d}_{dt.hour:02d}-{dt.minute:02d}-{dt.second:02d}"
+
+    file_name = f"static/captured_pics/{uid}/cap_{uid}_{date_string}.{file_ext}"
+
+    return file_name
+
+
+
 # Captures frames in the background (in a separate thread)
 def capture_frame():
     # grab global references to the video stream, output frame, and lock variables
@@ -197,7 +230,7 @@ def capture_frame():
             frame = cap.get_frame_robust()
             with lock:
                 outputFrame = frame
-                time.sleep(0.05)
+                time.sleep(1 / CAP_FPS)
         else:
             time.sleep(0.5)
 
@@ -306,7 +339,7 @@ def init_scope():
     # Capture one frame to initialize the microscope
     cap.frame_mode = (uvc_settings["video_w"], uvc_settings["video_h"], uvc_settings["video_fps"])
     cap.get_frame_robust()
-    
+
     # Update LCD Display
     # draw.text((5, 30), 'G-Scope Online!', font=fnt, fill = "WHITE")
     # draw.text((5, 100), '1. Connect to WiFi \n ssid: "scoPi" \n\n 2. Browse to: \n 192.168.4.1:8000', font=fnt, fill = "WHITE")

@@ -104,3 +104,5 @@ target/
 #VS Code
 .pylintrc
 .vscode/
+
+scope_control_app/static/captured_pics/
