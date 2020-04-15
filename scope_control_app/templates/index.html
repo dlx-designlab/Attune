@@ -43,7 +43,7 @@
 
 <div class="bgimg">
     
-    <div id="captureIndicator" class="capture-indicator w3-display-topmiddle">CAPTURING!!</div>
+    <div id="captureIndicator" class="capture-indicator w3-display-topmiddle">** CAPTURING ** </div>
     
     <div class="buttons-panel w3-display-left">
       <button id="settingsBtn" class="settings-button fas fa-cog fa-2x"></button>
@@ -107,8 +107,8 @@
   </div>
 
   <div class="w3-display-bottommiddle">
-      <button class="record-button fas fa-camera fa-2x"  onclick="capture_scope_feed('/save_image')"></button>
-      <button class="record-button fas fa-video fa-2x"  onclick="capture_scope_feed('/save_vid')"></button>      
+      <button id="rec-img-btn" class="record-button fas fa-camera fa-2x"  onclick="capture_scope_feed('/save_image')"></button>
+      <button id="rec-vid-btn" class="record-button fas fa-video fa-2x"  onclick="capture_scope_feed('/save_vid')"></button>      
   </div>
 
 
@@ -205,8 +205,12 @@
     function capture_scope_feed(capture_path){
       var timeStamp = new Date().getTime();
       var captureIndicator = document.getElementById("captureIndicator");
+      var recVidBtn = document.getElementById("rec-vid-btn");
+      var recImgBtn = document.getElementById("rec-img-btn");
       
       captureIndicator.style.display = "block";
+      recVidBtn.disabled = true;
+      recImgBtn.disabled = true;
 
       $.ajax({
           type: 'POST',
@@ -216,10 +220,14 @@
           success: function(result) {
                 document.getElementById("status").innerHTML = result;
                 captureIndicator.style.display = "none";
+                recVidBtn.disabled = false;
+                recImgBtn.disabled = false;
           },
           error: function(result) {
                 document.getElementById("status").innerHTML = "ERROR!";
                 captureIndicator.style.display = "none";
+                recVidBtn.disabled = false;
+                recImgBtn.disabled = false;
           }
       });
 

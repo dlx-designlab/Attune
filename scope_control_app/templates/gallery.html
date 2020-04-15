@@ -39,7 +39,11 @@
   {% for image in images %}
     <div class="gallery-thumb">
       <a target="_blank" href="{{ url_for('static', filename='captured_pics/' + userId + '/' + image) }}">
-        <img src="{{ url_for('static', filename='captured_pics/' + userId + '/' + image) }}">
+        {% if ".png" in image %}
+          <img src="{{ url_for('static', filename='captured_pics/' + userId + '/' + image) }}">
+        {% elif ".mp4" in image %}
+          <video width=100% height=100%"><source src="{{ url_for('static', filename='captured_pics/' + userId + '/' + image) }}" type="video/mp4"></video>
+        {% endif %}
         <div>{{ image }}</div>
       </a>
     </div>

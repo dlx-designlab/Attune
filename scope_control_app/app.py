@@ -165,7 +165,7 @@ def save_video():
     frames_to_capture = 80
 
     if isCapturing:
-        filename = make_file_name(request.get_json(), "mkv")
+        filename = make_file_name(request.get_json(), "mp4")
         print(f"saving vid file: {filename}")
 
         out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'X264'), CAP_FPS, (1280, 720))
