@@ -4,7 +4,7 @@ import logging
 import threading
 import time
 import uuid
-from datetime import datetime
+import datetime
 from os import listdir
 from os.path import isfile, join
 from pathlib import Path
@@ -212,7 +212,7 @@ def make_file_name(req_data, file_ext):
 
     # get current timestamp
     time_stamp = int(req_data['timestamp'] / 1000)
-    dt = datetime.fromtimestamp(time_stamp)
+    dt = datetime.datetime.fromtimestamp(time_stamp)
     date_string = f"{dt.year}-{dt.month:02d}-{dt.day:02d}_{dt.hour:02d}-{dt.minute:02d}-{dt.second:02d}"
 
     file_name = f"static/captured_pics/{uid}/cap_{uid}_{date_string}.{file_ext}"
