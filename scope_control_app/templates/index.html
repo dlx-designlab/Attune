@@ -45,7 +45,7 @@
     
     <div id="captureIndicator" class="capture-indicator w3-display-topmiddle">** CAPTURING ** </div>
     
-    <div class="buttons-panel w3-display-left">
+    <div id="leftButtonsPanel" class="buttons-panel w3-display-left">
       <button id="settingsBtn" class="settings-button fas fa-cog fa-2x"></button>
       <button class="gallery-button fas fa-images fa-2x" onclick="window.location.href = '/img_gallery';"></button>
     </div>
@@ -62,8 +62,13 @@
         </div>
         <div>
             <span class="setting-title">Brightness: </span>
-            <input type="range" min="0" max="255" value="{{ scopeSettings['Brightness'].value }}" class="slider" id="brightnessSlider">
+            <input type="range" min="-127" max="127" value="{{ scopeSettings['Brightness'].value }}" class="slider" id="brightnessSlider">
             <span id="brightnessSliderVal"></span>
+        </div>
+        <div>
+            <span class="setting-title">Exposure: </span>
+            <input type="range" min="1" max="500" value="{{ scopeSettings['Absolute Exposure Time'].value }}" class="slider" id="exposureSlider">
+            <span id="exposureSliderVal"></span>
         </div>
         <div>
             <span class="setting-title">Contrast: </span>
@@ -82,7 +87,7 @@
         </div>                   
         <div>
             <span class="setting-title">Gain: </span>
-            <input type="range" min="0" max="10" value="{{ scopeSettings['Gain'].value }}" class="slider" id="gainSlider">
+            <input type="range" min="0" max="48" value="{{ scopeSettings['Gain'].value }}" class="slider" id="gainSlider">
             <span id="gainSliderVal"></span>
         </div>
         <div>
@@ -155,6 +160,11 @@
                     console.log("Brightness:" + this.value);
                     set_scope_control('Brightness', this.value)
                     break;
+                case "exposureSlider":
+                    console.log("Exposure:" + this.value);
+                    set_scope_control('Absolute Exposure Time', this.value)
+                    break;
+                    
                 case "contrastSlider":
                     console.log("Contrast:" + this.value);
                     set_scope_control('Contrast', this.value)
@@ -237,15 +247,16 @@
     // Settings Panel Popup Control
     var settingsPopup = document.getElementById("settingsPanel");
     var settingsBtn = document.getElementById("settingsBtn");
+    var leftBtnsPanel = document.getElementById("leftButtonsPanel");
     var span = document.getElementsByClassName("close-settings-panel")[0];
 
     settingsBtn.onclick = function() {
       settingsPopup.style.display = "block";
-      settingsBtn.style.display="none";
+      leftBtnsPanel.style.display="none";
     }
     span.onclick = function() {
       settingsPopup.style.display = "none";
-      settingsBtn.style.display = "block";
+      leftBtnsPanel.style.display = "block";
     }
     // window.onclick = function(event) {
     //   if (event.target == modal) {
