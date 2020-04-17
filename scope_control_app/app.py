@@ -1,4 +1,4 @@
-import argparse
+# import argparse
 import json
 import logging
 import threading
@@ -8,7 +8,6 @@ import datetime
 from os import listdir
 from os.path import isfile, join
 from pathlib import Path
-from time import localtime, strftime
 
 # import keyboard
 import cv2
@@ -61,7 +60,7 @@ from flask import (Flask, Response, jsonify, make_response, redirect,
 # GPIO.setup(KEY3_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
 
 # initialize a flask object
-app = Flask(__name__)
+APP = Flask(__name__)
 
 # initialize the output frame and a lock used to ensure thread-safe
 # exchanges of the output frames (useful when multiple browsers/tabs are viewing the stream)
@@ -70,10 +69,11 @@ outputFrame = None
 isCapturing = True
 cap = None
 focus = 100
+controls_dict = dict()
 CAP_FPS = 20
 
 
-@app.route("/")
+@APP.route("/")
 def index():
 
     cookies = request.cookies
@@ -102,7 +102,7 @@ def index():
     return res
 
 
-@app.route('/set_control', methods=['POST'])
+@APP.route('/set_control', methods=['POST'])
 def set_ctrl():
     global controls_dict, focus
 
@@ -137,7 +137,7 @@ def set_ctrl():
 
 
 # Save an image file to the server
-@app.route('/save_image', methods=['POST'])
+@APP.route('/save_image', methods=['POST'])
 def save_image():
 
     if isCapturing:
@@ -158,7 +158,7 @@ def save_image():
 
 
 # Capture a short video
-@app.route('/save_vid', methods=['POST'])
+@APP.route('/save_vid', methods=['POST'])
 def save_video():
 
     # how long is the captured video (in frames)
@@ -168,12 +168,16 @@ def save_video():
         filename = make_file_name(request.get_json(), "mp4")
         print(f"saving vid file: {filename}")
 
-        out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'X264'), CAP_FPS, (1280, 720))
+        # Capture object setup
+        cap_vid_size = (UVC_SETTINGS["video_cap_w"], UVC_SETTINGS["video_cap_h"])
+        fourcc = cv2.VideoWriter_fourcc(*'avc1')
+        out = cv2.VideoWriter(filename, fourcc, CAP_FPS, cap_vid_size)
 
         for i in range(frames_to_capture):
             time.sleep(1 / CAP_FPS)
             with lock:
-                out.write(outputFrame.bgr)            
+                frame = cv2.resize(outputFrame.bgr, cap_vid_size, interpolation=cv2.INTER_AREA)
+                out.write(frame)
 
         out.release()
         res = "file saved!"
@@ -184,13 +188,13 @@ def save_video():
     return res
 
 
-@app.route("/video_feed")
+@APP.route("/video_feed")
 def video_feed():
     return Response(generate(), mimetype="multipart/x-mixed-replace; boundary=frame")
 
 
 # An image gallery of captured images
-@app.route("/img_gallery")
+@APP.route("/img_gallery")
 def img_gallery():
     cookies = request.cookies
     uid = cookies.get("scan_uuid")
@@ -270,7 +274,7 @@ def toggle_capture():
         # draw.text((5, 100), 'Scope is OFF', font=fnt, fill = "WHITE")
         # img = disp_image.rotate(90)
         # disp.ShowImage(img,0,0)
-        
+
 
 # def get_keypress():
 #
@@ -308,7 +312,7 @@ def toggle_capture():
 
 
 def init_scope():
-    global cap, uvc_settings, controls_dict, dev_list, scopeDeviceId
+    global cap, UVC_SETTINGS, controls_dict, dev_list, scopeDeviceId
     
     # Update LCD Display
     # draw.rectangle([(0,0),(240,240)],fill = "BLACK")
@@ -331,13 +335,13 @@ def init_scope():
     # Apply Custom Setting to the Scope via UVC
     print("--- Adjusting custom control settings: ---")
     for control in controls_dict:
-        controls_dict[control].value = uvc_settings[control]
+        controls_dict[control].value = UVC_SETTINGS[control]
         print(f"{control}: {controls_dict[control].value}")
     print("---------------------------")
     time.sleep(1)
 
     # Capture one frame to initialize the microscope
-    cap.frame_mode = (uvc_settings["video_w"], uvc_settings["video_h"], uvc_settings["video_fps"])
+    cap.frame_mode = (UVC_SETTINGS["video_w"], UVC_SETTINGS["video_h"], UVC_SETTINGS["video_fps"])
     cap.get_frame_robust()
 
     # Update LCD Display
@@ -367,7 +371,8 @@ logging.basicConfig(level=logging.INFO)
 
 # Load scope settings from a JSON File
 with open('scope_settings.json', 'r') as f:
-    uvc_settings = json.load(f)
+    UVC_SETTINGS = json.load(f)
+    CAP_FPS = UVC_SETTINGS["video_cap_fps"]
 
 # Find the G-Scope device number within all attached devices.
 dev_list = uvc.device_list()
@@ -383,9 +388,9 @@ init_scope()
 
 
 # Start a thread that will capture frames from the scope
-capture_thread = threading.Thread(target=capture_frame, args=())
-capture_thread.daemon = True
-capture_thread.start()
+CAPTURE_THREAD = threading.Thread(target=capture_frame, args=())
+CAPTURE_THREAD.daemon = True
+CAPTURE_THREAD.start()
 
 # Start a thread that will capture button press on the PI LCD Screen Hat
 # keypress_thread = threading.Thread(target=get_keypress, args=())
@@ -397,4 +402,4 @@ capture_thread.start()
 if __name__ == '__main__':
     # start the flask app
     # app.run(host=args["ip"], port=args["port"], debug=True, threaded=True, use_reloader=False)
-    app.run(host='0.0.0.0', port=8000, debug=True, threaded=True, use_reloader=False)
+    APP.run(host='0.0.0.0', port=8000, debug=True, threaded=True, use_reloader=False)
