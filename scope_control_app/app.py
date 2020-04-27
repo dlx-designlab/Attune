@@ -1,4 +1,4 @@
-# import argparse
+""" The Main Module of the cope control APP """
 import json
 import logging
 import threading
@@ -8,11 +8,12 @@ import datetime
 from os import listdir
 from os.path import isfile, join
 from pathlib import Path
-
+# import argparse
 # import keyboard
 import cv2
 # Camera UVC Properties control library
 import uvc  # >> https://github.com/pupil-labs/pyuvc
+# Flask web app framework
 from flask import (Flask, Response, jsonify, make_response, redirect,
                    render_template, request, send_file, url_for)
 
@@ -68,8 +69,8 @@ lock = threading.Lock()
 outputFrame = None
 isCapturing = True
 cap = None
-focus = 100
 controls_dict = dict()
+FOCUS = 100
 CAP_FPS = 20
 
 
@@ -104,7 +105,7 @@ def index():
 
 @APP.route('/set_control', methods=['POST'])
 def set_ctrl():
-    global controls_dict, focus
+    global controls_dict, FOCUS
 
     if isCapturing and request.method == 'POST' and request.is_json:
         req_data = request.get_json()
@@ -112,22 +113,20 @@ def set_ctrl():
         val = int(req_data['value'])
 
         # Adjust scope controls
-        # todo: fix smooth transition between auto-focus and manual focus
         if ctrl == 'Absolute Focus':
-            # print(controls_dict['Absolute Focus'])
-            # foc = int(controls_dict['Absolute Focus'].value)
-            focus += val
-            print(focus)
-            controls_dict['Absolute Focus'].value = focus
-            print(controls_dict['Absolute Focus'])
+            if controls_dict['Auto Focus'].value == 1:
+                controls_dict['Auto Focus'].value = 0
+                FOCUS = get_current_focus(FOCUS)
+
+            print(FOCUS)
+            FOCUS += val
+            controls_dict['Absolute Focus'].value = FOCUS
+            print(controls_dict['Absolute Focus'].value)
+            print(FOCUS)
         else:
             print(f"control: {ctrl}  /  value: {val}")
             controls_dict[ctrl].value = val
 
-        # if ctrl == "Auto Focus":
-        #     time.sleep(2)
-        #     scopeSettings.focus = controls_dict['Absolute Focus'].value
-        #     print(f"{controls_dict['Absolute Focus'].value} // {scopeSettings.focus}")
         res = "property set!"
     else:
         print("did not set!")
@@ -207,6 +206,8 @@ def img_gallery():
 
 
 def make_file_name(req_data, file_ext):
+    global FOCUS, controls_dict
+
     # get User Id from cookie
     cookies = request.cookies
     uid = cookies.get("scan_uuid")
@@ -219,7 +220,18 @@ def make_file_name(req_data, file_ext):
     dt = datetime.datetime.fromtimestamp(time_stamp)
     date_string = f"{dt.year}-{dt.month:02d}-{dt.day:02d}_{dt.hour:02d}-{dt.minute:02d}-{dt.second:02d}"
 
-    file_name = f"static/captured_pics/{uid}/cap_{uid}_{date_string}.{file_ext}"
+    # Get current focus and add zeros if needed to make the file name consitent
+    if controls_dict['Auto Focus'].value == 1:
+        FOCUS = get_current_focus(FOCUS)
+
+    if FOCUS > 99:
+        foc = str(FOCUS)
+    elif 9 < FOCUS < 100:
+        foc = f"0{FOCUS}"
+    elif FOCUS < 10:
+        foc = f"00{FOCUS}"
+
+    file_name = f"static/captured_pics/{uid}/cap_{uid}_{date_string}_f{foc}.{file_ext}"
 
     return file_name
 
@@ -274,6 +286,19 @@ def toggle_capture():
         # draw.text((5, 100), 'Scope is OFF', font=fnt, fill = "WHITE")
         # img = disp_image.rotate(90)
         # disp.ShowImage(img,0,0)
+
+
+def get_current_focus(focus):
+    # PYUVC Workaround: Set "Absolute Focus" property to a random value
+    # This will update the Property with the actual latest value from the camera (after AF adjustment)
+    # And set the actual focus value in the camera to this random value
+    controls_dict['Absolute Focus'].value = focus
+    # Set the actual focus value in the camera back to it's latest original value
+    controls_dict['Absolute Focus'].value = controls_dict['Absolute Focus'].value
+    # Save this value in a variable for future reference
+    focus = controls_dict['Absolute Focus'].value
+
+    return focus
 
 
 # def get_keypress():
@@ -373,6 +398,7 @@ logging.basicConfig(level=logging.INFO)
 with open('scope_settings.json', 'r') as f:
     UVC_SETTINGS = json.load(f)
     CAP_FPS = UVC_SETTINGS["video_cap_fps"]
+    FOCUS = UVC_SETTINGS["focus"]
 
 # Find the G-Scope device number within all attached devices.
 dev_list = uvc.device_list()

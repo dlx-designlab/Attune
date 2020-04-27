@@ -24,8 +24,7 @@
 
 <style>
   .bgimg {
-    background-image: url('{{ url_for('video_feed') }}');
-/*    background-image: url('img.jpg');    */
+    background-image: url("{{ url_for('static', filename='img/frame-cross.png') }}"), url("{{ url_for('video_feed') }}");
     background-color: #000;
     min-height: 100%;
     background-repeat: no-repeat;

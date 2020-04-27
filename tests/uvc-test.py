@@ -6,12 +6,14 @@
 import uvc  # >> https://github.com/pupil-labs/pyuvc
 import logging
 import cv2
+import time
 
 logging.basicConfig(level=logging.INFO)
 
 dev_list = uvc.device_list()
 print(dev_list)
 
+abs_focus = 100
 
 # Find the G-Scope device number from all attached devices.
 scopeDeviceId = 0
@@ -37,16 +39,32 @@ print("------")
 cap.frame_mode = (640, 480, 30)
 frame = cap.get_frame_robust()
 
+time.sleep(.5)
 # Set Auto-focus to false and set a custom value
 # controls_dict['Auto Focus'].value = 0
+# controls_dict['Absolute Focus'].value = abs_focus
 # controls_dict['Absolute Focus'].value = 100
 #
 # # Set Auto-WB to false and set a custom value
 # controls_dict['White Balance temperature,Auto'].value = 0
 # controls_dict['White Balance temperature'].value = 2000
 
+
+def get_current_focus(focus):
+
+    # PYUVC Workaround: Set "Absolute Focus" property to a random value
+    # This will update the Property with the actual latest value from the camera (after AF adjustment)
+    # And set the actual focus value in the camera to this random value
+    controls_dict['Absolute Focus'].value = focus
+    # Set the actual focus value in the camera back to it's latest original value
+    controls_dict['Absolute Focus'].value = controls_dict['Absolute Focus'].value
+    # Save this value in a variable for future reference
+    focus = controls_dict['Absolute Focus'].value
+
+    return focus
+
 # Capture some frames
-while (True):
+while True:
 
     # controls_dict['White Balance temperature'].value = 2000
 
@@ -58,28 +76,46 @@ while (True):
     # App controls
     k = cv2.waitKey(1)
     if k == ord('f'):    # f to autoFocus
-        controls_dict = dict([(c.display_name, c) for c in cap.controls])
-        print(controls_dict['Absolute Focus'].value)
-        # if controls_dict['Auto Focus'].value == 1:
-        #     controls_dict['Auto Focus'].value = 0
-        # else:
-        #     controls_dict['Auto Focus'].value = 1
 
-        # print(controls_dict['Auto Focus'].value)
+        # Set camera to auto focus mode
+        controls_dict['Auto Focus'].value = 1
+        # Wait for the camerra focus to adjust
+        time.sleep(3)
+
+        abs_focus = get_current_focus(abs_focus)
+
+        print(controls_dict['Absolute Focus'].value)
+        print(abs_focus)
+        print(controls_dict['Auto Focus'].value)
 
     if k == ord('g'):    # g to focus up
-        controls_dict['Auto Focus'].value = 0
-        print("---------------")
-        print(controls_dict['Absolute Focus'].value)
-        controls_dict['Absolute Focus'].value += 1
-        print(controls_dict['Absolute Focus'].value)
+        if controls_dict['Auto Focus'].value == 1:
+            controls_dict['Auto Focus'].value = 0
+            abs_focus = get_current_focus(abs_focus)
+            
+        abs_focus += 1
+        controls_dict['Absolute Focus'].value = abs_focus
 
     if k == ord('d'):    # d to focus down
+        if controls_dict['Auto Focus'].value == 1:
+            controls_dict['Auto Focus'].value = 0
+            abs_focus = get_current_focus(abs_focus)
+
         controls_dict['Auto Focus'].value = 0
         print("---------------")
+        abs_focus -= 1
         print(controls_dict['Absolute Focus'].value)
-        controls_dict['Absolute Focus'].value -= 1
+        controls_dict['Absolute Focus'].value = abs_focus
         print(controls_dict['Absolute Focus'].value)
+        print(abs_focus)        
+    
+    if k == ord('w'):    # w whitebalance up
+        controls_dict['White Balance temperature,Auto'].value = 0
+        print("---------------")
+        print(controls_dict['White Balance temperature'].value)
+        controls_dict['White Balance temperature'].value += 100
+        print(controls_dict['White Balance temperature'].value)
+
 
     if k == ord('q'):    # Esc key to stop
         break
