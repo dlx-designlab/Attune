@@ -54,53 +54,60 @@
         <span class="close-settings-panel">&times;</span>
 
         <h2>Settings:</h2>
-        <div>
-            <span class="setting-title">White Balance: </span>
-            <input type="range" min="2300" max="6600" value="{{ scopeSettings['White Balance temperature'].value }}" class="slider" id="wbSlider">
-            <span id="wbSliderVal"></span>
+        <div class="setting-block">
+            <span class="setting-label">White Balance: </span><span class="setting-val" id="wbSliderVal"></span>
+            <button class="settings-slider-button fas fa-minus fa-xs" id="minus"></button>
+            <input type="range" min="2300" max="6600" value="{{ scopeSettings['White Balance temperature'].value }}" class="setting-slider" id="wbSlider">
+            <button class="settings-slider-button fas fa-plus fa-xs" id="plus"></button>
         </div>
-        <div>
-            <span class="setting-title">Brightness: </span>
-            <input type="range" min="-127" max="127" value="{{ scopeSettings['Brightness'].value }}" class="slider" id="brightnessSlider">
-            <span id="brightnessSliderVal"></span>
+        <div class="setting-block">
+            <span class="setting-label">Brightness: </span><span class="setting-val" id="brightnessSliderVal"></span>
+            <button class="settings-slider-button fas fa-minus fa-xs" id="minus"></button>
+            <input type="range" min="-127" max="127" value="{{ scopeSettings['Brightness'].value }}" class="setting-slider" id="brightnessSlider">
+            <button class="settings-slider-button fas fa-plus fa-xs" id="plus"></button>
         </div>
-        <div>
-            <span class="setting-title">Exposure: </span>
-            <input type="range" min="1" max="500" value="{{ scopeSettings['Absolute Exposure Time'].value }}" class="slider" id="exposureSlider">
-            <span id="exposureSliderVal"></span>
+        <div class="setting-block">
+            <span class="setting-label">Exposure: </span><span class="setting-val" id="exposureSliderVal"></span>
+            <button class="settings-slider-button fas fa-minus fa-xs" id="minus"></button>
+            <input type="range" min="1" max="500" value="{{ scopeSettings['Absolute Exposure Time'].value }}" class="setting-slider" id="exposureSlider">
+            <button class="settings-slider-button fas fa-plus fa-xs" id="plus"></button>
         </div>
-        <div>
-            <span class="setting-title">Contrast: </span>
-            <input type="range" min="0" max="255" value="{{ scopeSettings['Contrast'].value }}" class="slider" id="contrastSlider">
-            <span id="contrastSliderVal"></span>
+        <div class="setting-block">
+            <span class="setting-label">Contrast: </span><span class="setting-val" id="contrastSliderVal"></span>
+            <button class="settings-slider-button fas fa-minus fa-xs" id="minus"></button>
+            <input type="range" min="0" max="255" value="{{ scopeSettings['Contrast'].value }}" class="setting-slider" id="contrastSlider">
+            <button class="settings-slider-button fas fa-plus fa-xs" id="plus"></button>
         </div>
-        <div>
-            <span class="setting-title">Hue: </span>
-            <input type="range" min="-180" max="180" value="{{ scopeSettings['Hue'].value }}" class="slider" id="hueSlider">
-            <span id="hueSliderVal"></span>
+        <div class="setting-block">
+            <span class="setting-label">Hue: </span><span class="setting-val" id="hueSliderVal"></span>
+            <button class="settings-slider-button fas fa-minus fa-xs" id="minus"></button>
+            <input type="range" min="-180" max="180" value="{{ scopeSettings['Hue'].value }}" class="setting-slider" id="hueSlider">
+            <button class="settings-slider-button fas fa-plus fa-xs" id="plus"></button>
         </div>
-        <div>
-            <span class="setting-title">Saturation: </span>
-            <input type="range" min="0" max="255" value="{{ scopeSettings['Saturation'].value }}" class="slider" id="satSlider">
-            <span id="satSliderVal"></span>
+        <div class="setting-block">
+            <span class="setting-label">Saturation: </span><span class="setting-val" id="satSliderVal"></span>
+            <button class="settings-slider-button fas fa-minus fa-xs" id="minus"></button>
+            <input type="range" min="0" max="255" value="{{ scopeSettings['Saturation'].value }}" class="setting-slider" id="satSlider">
+            <button class="settings-slider-button fas fa-plus fa-xs" id="plus"></button>
         </div>                   
-        <div>
-            <span class="setting-title">Gain: </span>
-            <input type="range" min="0" max="48" value="{{ scopeSettings['Gain'].value }}" class="slider" id="gainSlider">
-            <span id="gainSliderVal"></span>
+        <div class="setting-block">
+            <span class="setting-label">Gain: </span><span class="setting-val" id="gainSliderVal"></span>
+            <button class="settings-slider-button fas fa-minus fa-xs" id="minus"></button>
+            <input type="range" min="0" max="48" value="{{ scopeSettings['Gain'].value }}" class="setting-slider" id="gainSlider">
+            <button class="settings-slider-button fas fa-plus fa-xs" id="plus"></button>
         </div>
-        <div>
-            <span class="setting-title">Gamma: </span>
-            <input type="range" min="1" max="255" value="{{ scopeSettings['Gamma'].value }}" class="slider" id="gammaSlider">
-            <span id="gammaSliderVal"></span>
+        <div class="setting-block">
+            <span class="setting-label">Gamma: </span><span class="setting-val" id="gammaSliderVal"></span>
+            <button class="settings-slider-button fas fa-minus fa-xs" id="minus"></button>
+            <input type="range" min="1" max="255" value="{{ scopeSettings['Gamma'].value }}" class="setting-slider" id="gammaSlider">
+            <button class="settings-slider-button fas fa-plus fa-xs" id="plus"></button>
         </div>
-        <div>
-            <span class="setting-title">Backlight Comp: </span>
-            <input type="range" min="0" max="8" value="{{ scopeSettings['Backlight Compensation'].value }}" class="slider" id="blcSlider">
-            <span id="blcSliderVal"></span>
+        <div class="setting-block">
+            <span class="setting-label">Backlight Comp: </span><span class="setting-val" id="blcSliderVal"></span>
+            <button class="settings-slider-button fas fa-minus fa-xs" id="minus"></button>
+            <input type="range" min="0" max="8" value="{{ scopeSettings['Backlight Compensation'].value }}" class="setting-slider" id="blcSlider">
+            <button class="settings-slider-button fas fa-plus fa-xs" id="plus"></button>
         </div>
-    
-      <p class="status" id="status"> status...</p>
 
     </div>
 
@@ -115,6 +122,9 @@
       <button id="rec-vid-btn" class="record-button fas fa-video fa-2x"  onclick="capture_scope_feed('/save_vid')"></button>      
   </div>
 
+  <div class="status-log w3-display-bottomright">
+      <p id="status"> *** Status Log ***</p>
+  </div>
 
   <div class="uid w3-display-bottomleft">
       <p>UID: {{ userId }}</p>
@@ -134,8 +144,37 @@
 
 <script>
 
+    // + - buttons to control sliders settings
+    var slidersButtons = document.getElementById("settingsPanel").querySelectorAll(".settings-slider-button");
+    slidersButtons.forEach(item => {
+
+        item.onclick = function(){
+            var sliderId = item.parentElement.querySelector(".setting-slider").id
+            var settingSlider = $("#" + sliderId)
+            var sliderStep = parseInt(settingSlider.attr('step'), 10);
+            var currentSliderValue = parseInt(settingSlider.val(), 10);
+            var newSliderValue = currentSliderValue;
+
+            // Update Sliders values when + or = buttons are pressed
+            var btnId = this.id
+            switch(btnId){
+                case "plus":
+                    newSliderValue = currentSliderValue + 1;
+                    console.log(sliderId + "+");
+                    break;
+                case "minus":
+                    console.log(sliderId + "-");
+                    newSliderValue = currentSliderValue - 1;
+                    break;
+            }
+
+            settingSlider.val(newSliderValue).change()
+
+        }
+    });
+
     // Update sliders values and send to scope
-    var sliders = document.querySelectorAll('.slider')
+    var sliders = document.querySelectorAll('.setting-slider')
     sliders.forEach(item => {
         
         var labelId = item.id + "Val"
@@ -143,13 +182,15 @@
         label.innerHTML = item.value
 
         // Update sliders labels 
-        item.oninput = function(){
-            label.innerHTML = this.value
-        }
+        // item.oninput = function(){
+        //     label.innerHTML = this.value
+        // }
 
         // Update actual scope setting with selected slider value
         item.onchange = function() {
             var controlId = this.id
+            label.innerHTML = this.value
+
             switch(controlId){
                 case "wbSlider":
                     console.log("White Balance temperature:" + this.value);

@@ -118,20 +118,20 @@ def set_ctrl():
                 controls_dict['Auto Focus'].value = 0
                 FOCUS = get_current_focus(FOCUS)
 
-            print(FOCUS)
+            # print(FOCUS)
             FOCUS += val
             controls_dict['Absolute Focus'].value = FOCUS
-            print(controls_dict['Absolute Focus'].value)
-            print(FOCUS)
+            res = f"Absolute Focus: {FOCUS}"
+            # print(controls_dict['Absolute Focus'].value)
+            # print(FOCUS)
         else:
-            print(f"control: {ctrl}  /  value: {val}")
             controls_dict[ctrl].value = val
+            res = f"{ctrl}: {val}"
 
-        res = "property set!"
     else:
-        print("did not set!")
         res = "could not set!"
 
+    print(res)
     return res
 
 
@@ -338,7 +338,7 @@ def get_current_focus(focus):
 
 def init_scope():
     global cap, UVC_SETTINGS, controls_dict, dev_list, scopeDeviceId
-    
+
     # Update LCD Display
     # draw.rectangle([(0,0),(240,240)],fill = "BLACK")
     # draw.text((5, 5), 'Conecting to G-Scope...', font=fnt, fill = "WHITE")
@@ -352,31 +352,29 @@ def init_scope():
     # Load supported device controls list
     controls_dict = dict([(c.display_name, c) for c in cap.controls])
 
+    # Capture one frame to initialize the microscope
+    cap.frame_mode = (UVC_SETTINGS["video_w"], UVC_SETTINGS["video_h"], UVC_SETTINGS["video_fps"])
+    cap.get_frame_robust()
+    time.sleep(1)
+
     print(cap.avaible_modes)
     print("--- Available Controls & Init Values: ---")
     for control in controls_dict:
         print(f"{control}: {controls_dict[control].value}")
     print("---------------------------")
+
     # Apply Custom Setting to the Scope via UVC
     print("--- Adjusting custom control settings: ---")
     for control in controls_dict:
         controls_dict[control].value = UVC_SETTINGS[control]
         print(f"{control}: {controls_dict[control].value}")
     print("---------------------------")
-    time.sleep(1)
-
-    # Capture one frame to initialize the microscope
-    cap.frame_mode = (UVC_SETTINGS["video_w"], UVC_SETTINGS["video_h"], UVC_SETTINGS["video_fps"])
-    cap.get_frame_robust()
 
     # Update LCD Display
     # draw.text((5, 30), 'G-Scope Online!', font=fnt, fill = "WHITE")
     # draw.text((5, 100), '1. Connect to WiFi \n ssid: "scoPi" \n\n 2. Browse to: \n 192.168.4.1:8000', font=fnt, fill = "WHITE")
     # img = disp_image.rotate(90)
     # disp.ShowImage(img,0,0)
-
-    time.sleep(1)
-
 
 # commandline argument parser
 # ap = argparse.ArgumentParser()

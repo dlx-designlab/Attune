@@ -106,3 +106,4 @@ target/
 .vscode/
 
 scope_control_app/static/captured_pics/
+.idea/workspace.xml

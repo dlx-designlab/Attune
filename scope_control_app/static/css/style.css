@@ -105,25 +105,42 @@ button:disabled {
     color: white;
     background-color: rgba(100,100,100,0.8);
 	margin: 0px;
-	padding: 10px;
-    max-width: 300px;
+	padding: 5px 20px 20px 20px;
+    /* width: 200px; */
     border-radius: 0px 10px 10px 0px;
 }
 
-.setting-title{
-    display: block;
+.setting-block{
+    font-size: 1em;
     margin-top: 10px;
 }
 
-.status {
-    margin: 20px 0;
-    padding: 10px;
-    background-color: pink;
+.setting-val{
+    display: inline-block;
+    min-width: 50px;
+    text-align: center;
+}
+
+.setting-label{
+    display: inline-block;
+    min-width: 140px;
+}
+
+.settings-slider-button{
+    width: 20px;
+    height: 20px;
+    padding: 0px;
+    margin: 0px;
+    border-radius: 10px;
+}
+
+.setting-slider{
+
 }
 
 /* The Close Button */
 .close-settings-panel{
-  color: #aaa;
+  color: rgb(221, 221, 221);
   float: right;
   font-size: 28px;
   font-weight: bold;
@@ -148,6 +165,17 @@ button:disabled {
     color: white;
     font-size: 0.8em;
     border-radius: 0px 5px 0px 0px;
+    z-index: 1;
+}
+
+.status-log {
+    width: 300px;
+    text-align: center;
+    padding: 0 20px 0 20px;
+    background-color: rgba(100,100,100,0.6);
+    color: white;
+    font-size: 0.8em;
+    border-radius: 5px 0px 0px 0px;
     z-index: 1;
 }
 
