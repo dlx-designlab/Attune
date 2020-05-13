@@ -44,9 +44,10 @@ body, html{margin:0; padding:0; border: 0; outline: 0; font-size: 100%; vertical
 .w3-display-bottommiddle{position:absolute;left:50%;bottom:0;transform:translate(-50%,0%);-ms-transform:translate(-50%,0%)}
 
 button {
-    border-radius: 30%;
+    border-radius: 30px;
     padding: 20px;
     margin: 10px;
+    background-color: white;
 }
 
 button:focus {outline:0;}

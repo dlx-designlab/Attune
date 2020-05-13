@@ -36,6 +36,11 @@
 
 <div class="img-gallery">
   
+  <div>
+    <a href="/"><button class="fas fa-chevron-left"></button></a>
+    <a href="/download_gallery"><button class="">Download All Files</button></a>
+  </div>
+
   {% for image in images %}
     <div class="gallery-thumb">
       <a target="_blank" href="{{ url_for('static', filename='captured_pics/' + userId + '/' + image) }}">

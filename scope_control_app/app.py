@@ -8,6 +8,8 @@ import datetime
 from os import listdir
 from os.path import isfile, join
 from pathlib import Path
+from pyzip import PyZip
+from pyfolder import PyFolder
 # import argparse
 # import keyboard
 import cv2
@@ -203,6 +205,22 @@ def img_gallery():
     files_list.sort(reverse=True)
 
     return render_template('gallery.html', userId=uid, images=files_list)
+
+
+@APP.route("/download_gallery")
+def download_gallery():
+    cookies = request.cookies
+    uid = cookies.get("scan_uuid")
+    user_files_path = f"static/captured_pics/{uid}"
+
+    pyzip = PyZip(PyFolder(user_files_path, interpret=False))
+    zipped_filename = f"static/captured_pics/{uid}.zip"
+    pyzip.save(zipped_filename)
+
+    try:
+        return send_file(zipped_filename, as_attachment=True, attachment_filename=f'{uid}.zip')
+    except Exception as exception:
+        return str(exception)
 
 
 def make_file_name(req_data, file_ext):
