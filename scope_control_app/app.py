@@ -389,6 +389,9 @@ def init_scope():
         print(f"{control}: {controls_dict[control].value}")
     print("---------------------------")
 
+    # Set the Manual Focus Again (PYUVC workaround)
+    controls_dict['Absolute Focus'].value = FOCUS
+
     # Update LCD Display
     # draw.text((5, 30), 'G-Scope Online!', font=fnt, fill = "WHITE")
     # draw.text((5, 100), '1. Connect to WiFi \n ssid: "scoPi" \n\n 2. Browse to: \n 192.168.4.1:8000', font=fnt, fill = "WHITE")
@@ -415,7 +418,7 @@ logging.basicConfig(level=logging.INFO)
 with open('scope_settings.json', 'r') as f:
     UVC_SETTINGS = json.load(f)
     CAP_FPS = UVC_SETTINGS["video_cap_fps"]
-    FOCUS = UVC_SETTINGS["focus"]
+    FOCUS = UVC_SETTINGS["Absolute Focus"]
 
 # Find the G-Scope device number within all attached devices.
 dev_list = uvc.device_list()
