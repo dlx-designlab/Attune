@@ -6,6 +6,7 @@
 "video_cap_h": 360,
 "video_cap_fps": 20,
 "focus": 100,
+"setting_available": true,
 "Auto Focus": 0,
 "White Balance temperature,Auto": 0,
 "Absolute Focus": 100,

@@ -37,8 +37,10 @@ print("------")
 
 # Capture a frame to initialize the cope
 cap.frame_mode = (640, 480, 30)
+print("connection established")
+time.sleep(.5)
 frame = cap.get_frame_robust()
-
+print("frame captured")
 time.sleep(.5)
 # Set Auto-focus to false and set a custom value
 # controls_dict['Auto Focus'].value = 0

@@ -28,7 +28,7 @@ h1{font-size:36px}h2{font-size:30px}h3{font-size:24px}h4{font-size:20px}h5{font-
 h1,h2,h3,h4,h5,h6{font-family:"Segoe UI",Arial,sans-serif;font-weight:400;margin:10px 0}.w3-wide{letter-spacing:4px}
 hr{border:0;border-top:1px solid #eee;margin:20px 0}
 body, html {height: 100%}
-body, html{margin:0; padding:0; border: 0; outline: 0; font-size: 100%; vertical-align: baseline; background-color: black;}
+body, html{margin:0; padding:0; border: 0; outline: 0; font-size: 100%; vertical-align: baseline; background-color: black; touch-action: manipulation;}
 
 
 
@@ -45,7 +45,7 @@ body, html{margin:0; padding:0; border: 0; outline: 0; font-size: 100%; vertical
 
 button {
     border-radius: 30px;
-    padding: 20px;
+    padding: 18px;
     margin: 10px;
     background-color: white;
 }
@@ -81,7 +81,7 @@ button:disabled {
 .buttons-panel{
     margin: 20px;
     align-items: center;
-    max-width: 120px;
+    max-width: 100px;
 /*    background-color: rgba(255,255,255,0.5);*/
 }
 
@@ -169,6 +169,11 @@ button:disabled {
     z-index: 1;
 }
 
+.uid p{
+    margin-block-start: .5em;
+    margin-block-end: .5em;
+}
+
 .status-log {
     width: 300px;
     text-align: center;
@@ -178,6 +183,11 @@ button:disabled {
     font-size: 0.8em;
     border-radius: 5px 0px 0px 0px;
     z-index: 1;
+}
+
+.status-log p{
+    margin-block-start: .5em;
+    margin-block-end: .5em;
 }
 
 .img-gallery{

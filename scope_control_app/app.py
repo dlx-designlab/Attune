@@ -74,6 +74,7 @@ cap = None
 controls_dict = dict()
 FOCUS = 100
 CAP_FPS = 20
+UVC_SETTINGS = None
 
 
 @APP.route("/")
@@ -84,12 +85,12 @@ def index():
     # Check for existing cookie with UID. Make a new one if doesnt exist
     if cookies.get("scan_uuid"):
         uid = cookies.get("scan_uuid")
-        res = make_response(render_template("index.html", scopeSettings=controls_dict, userId=uid))
+        res = make_response(render_template("index.html", scopeSettings=controls_dict, userId=uid, settingsMode=UVC_SETTINGS["setting_available"]))
     else:
         # Generate a random UID 8 characters long
         uid = uuid.uuid4().hex
         uid = uid.upper()[0:8]
-        res = make_response(render_template("index.html", scopeSettings=controls_dict, userId=uid))
+        res = make_response(render_template("index.html", scopeSettings=controls_dict, userId=uid, settingsMode=UVC_SETTINGS["setting_available"]))
         # Create the cookie
         res.set_cookie(
             "scan_uuid",
