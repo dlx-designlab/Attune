@@ -145,6 +145,12 @@
 <script src="{{ url_for('static', filename='scripts/jquery.min.js') }}"></script>
 
 <script>
+    
+    // a PYUVC workaround >> Adjust scope focus when app loads 
+    window.onload = (event) => {
+        set_scope_control('Absolute Focus', 0);
+        console.log('adjusing focus...');
+    };
 
     // + - buttons to control sliders settings
     var slidersButtons = document.getElementById("settingsPanel").querySelectorAll(".settings-slider-button");

@@ -19,49 +19,6 @@ import uvc  # >> https://github.com/pupil-labs/pyuvc
 from flask import (Flask, Response, jsonify, make_response, redirect,
                    render_template, request, send_file, url_for)
 
-# Imports to use with the Raspberry Pi 1.3" Display Hat
-# import spidev as SPI
-# import ST7789
-# import RPi.GPIO as GPIO
-# from PIL import Image, ImageDraw, ImageFont
-
-# Raspberry Pi pin config:
-# RST_PIN        = 25
-# CS_PIN         = 8
-# DC_PIN         = 24
-
-# KEY_UP_PIN     = 6
-# KEY_DOWN_PIN   = 19
-# KEY_LEFT_PIN   = 5
-# KEY_RIGHT_PIN  = 26
-# KEY_PRESS_PIN  = 13
-
-# KEY1_PIN       = 21
-# KEY2_PIN       = 20
-# KEY3_PIN       = 16
-
-# RST = 27
-# DC = 25
-# BL = 24
-# bus = 0
-# device = 0
-
-# init 240x240 display with hardware SPI:
-# disp = ST7789.ST7789(SPI.SpiDev(bus, device),RST, DC, BL)
-# disp.Init()
-# disp.clear()
-
-# init GPIO
-# GPIO.setmode(GPIO.BCM)
-# GPIO.setup(KEY_UP_PIN,      GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-# GPIO.setup(KEY_DOWN_PIN,    GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-# GPIO.setup(KEY_LEFT_PIN,    GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-# GPIO.setup(KEY_RIGHT_PIN,   GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-# GPIO.setup(KEY_PRESS_PIN,   GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-# GPIO.setup(KEY1_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-# GPIO.setup(KEY2_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-# GPIO.setup(KEY3_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-
 # initialize a flask object
 APP = Flask(__name__)
 
@@ -320,41 +277,6 @@ def get_current_focus(focus):
     return focus
 
 
-# def get_keypress():
-#
-#     key_a_pressed = False
-#     key_b_pressed = False
-#     key_c_pressed = False
-#
-#    # try:
-#     while 1:
-#         if GPIO.input(KEY1_PIN): # button is released
-#             key_a_pressed = False
-#         elif not key_a_pressed: # button is pressed:
-#             key_a_pressed = True
-#             print("KEY-A")
-#
-#         # Key B: Turns the scope on or off
-#         if GPIO.input(KEY2_PIN): # button is released
-#             key_b_pressed = False
-#             time.sleep(1)
-#         elif not key_b_pressed: # button is pressed:
-#             key_b_pressed = True
-#             toggle_capture()
-#             print("KEY-B")
-#
-#         if GPIO.input(KEY3_PIN): # button is released
-#             key_c_pressed = False
-#         elif not key_c_pressed: # button is pressed:
-#             key_c_pressed = True
-#             print("KEY-C")
-#
-# #    except:
-#  #       print("except")
-#
-#   #  GPIO.cleanup()
-
-
 def init_scope():
     global cap, UVC_SETTINGS, controls_dict, dev_list, scopeDeviceId
 
@@ -392,11 +314,6 @@ def init_scope():
     # Set the Manual Focus Again (PYUVC workaround)
     controls_dict['Absolute Focus'].value = FOCUS
 
-    # Update LCD Display
-    # draw.text((5, 30), 'G-Scope Online!', font=fnt, fill = "WHITE")
-    # draw.text((5, 100), '1. Connect to WiFi \n ssid: "scoPi" \n\n 2. Browse to: \n 192.168.4.1:8000', font=fnt, fill = "WHITE")
-    # img = disp_image.rotate(90)
-    # disp.ShowImage(img,0,0)
 
 # commandline argument parser
 # ap = argparse.ArgumentParser()
@@ -406,13 +323,6 @@ def init_scope():
 # args = vars(ap.parse_args())
 
 logging.basicConfig(level=logging.INFO)
-
-# Create blank image for drawing on display.
-# disp.clear()
-# disp_image = Image.new("RGB", (disp.width, disp.height), "BLACK")
-# draw = ImageDraw.Draw(disp_image)
-# fnt = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSansBold.ttf', 20)
-
 
 # Load scope settings from a JSON File
 with open('scope_settings.json', 'r') as f:
