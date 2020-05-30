@@ -1,7 +1,6 @@
 {
-"video_w": 1920,
-"video_h": 1080,
-"video_fps": 20,
+"capture_mode": 3,
+"stream_fps": 12,
 "video_cap_w": 1280,
 "video_cap_h": 720,
 "video_cap_fps": 20,

@@ -160,6 +160,9 @@
         set_scope_control('White Balance temperature,Auto', {{ scopeSettings['White Balance temperature,Auto'].value }} );
         set_scope_control('White Balance temperature', {{ scopeSettings['White Balance temperature'].value }} );        
         set_scope_control('Absolute Focus', 0);
+
+        // var is_mobile = detectMob();
+
     };
 
     // + - buttons to control sliders settings
@@ -291,6 +294,20 @@
 
     }
 
+    function detectMob() {
+        const toMatch = [
+            /Android/i,
+            /webOS/i,
+            /iPhone/i,
+            /iPad/i,
+            /iPod/i,
+            /BlackBerry/i,
+            /Windows Phone/i
+        ];
+        return toMatch.some((toMatchItem) => {
+            return navigator.userAgent.match(toMatchItem);
+        });
+    }
 
     // Settings Panel Popup Control
     var settingsPopup = document.getElementById("settingsPanel");

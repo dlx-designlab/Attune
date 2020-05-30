@@ -26,17 +26,23 @@ print(f"G-Scope device id is: {scopeDeviceId}")
 
 # Add new capture device and its control properties
 cap = uvc.Capture(dev_list[scopeDeviceId]["uid"])
+time.sleep(1)
 controls_dict = dict([(c.display_name, c) for c in cap.controls])
 
+# Print available Capture Modes
+print("Availbale Capture Modes:")
+for count, mode in enumerate(cap.avaible_modes):
+    print(count, mode)
+
 # Print available UVC controls
-print(cap.avaible_modes)
 print("--- Available Controls: ---")
 for control in controls_dict:
     print(f"{control}: {controls_dict[control].value} ({controls_dict[control].min_val}-{controls_dict[control].max_val})")
 print("------")
 
 # Capture a frame to initialize the cope
-cap.frame_mode = (640, 480, 30)
+capture_mode = cap.avaible_modes[0]
+cap.frame_mode = (capture_mode[0], capture_mode[1], capture_mode[2])
 print("connection established")
 time.sleep(.5)
 frame = cap.get_frame_robust()
@@ -118,6 +124,9 @@ while True:
         controls_dict['White Balance temperature'].value += 100
         print(controls_dict['White Balance temperature'].value)
 
+
+    if k == ord('r'):    # w whitebalance up
+        cap.frame_mode = (1280, 720, 30)
 
     if k == ord('q'):    # Esc key to stop
         break

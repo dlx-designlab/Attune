@@ -31,6 +31,7 @@ cap = None
 controls_dict = dict()
 FOCUS = 100
 CAP_FPS = 20
+STREAM_FPS = 10
 UVC_SETTINGS = None
 
 
@@ -102,7 +103,6 @@ def save_image():
     if isCapturing:
         filename = make_file_name(request.get_json(), "png")
         print(f"saving img file: {filename}")
-
         # Convert BGR to RGB and save the image
         # im_rgb = outputFrame.bgr[:, :, [2, 1, 0]]
         # Image.fromarray(im_rgb).save(filename)
@@ -218,11 +218,10 @@ def capture_frame():
     # grab global references to the video stream, output frame, and lock variables
     global cap, outputFrame, lock, isCapturing
     while True:
-        if isCapturing:
+        if isCapturing:            
             frame = cap.get_frame_robust()
             with lock:
                 outputFrame = frame
-                time.sleep(1 / CAP_FPS)
         else:
             time.sleep(0.5)
 
@@ -235,6 +234,9 @@ def generate():
     placeholder_image = open("static/img/scope_off.jpg", "rb").read()
 
     while True:
+
+        time.sleep(1 / STREAM_FPS)
+
         with lock:
             if isCapturing and outputFrame is None:
                 continue
@@ -294,11 +296,13 @@ def init_scope():
     controls_dict = dict([(c.display_name, c) for c in cap.controls])
 
     # Capture one frame to initialize the microscope
-    cap.frame_mode = (UVC_SETTINGS["video_w"], UVC_SETTINGS["video_h"], UVC_SETTINGS["video_fps"])
+    print("Available Capture Modes:", cap.avaible_modes)
+    cap_mode = cap.avaible_modes[UVC_SETTINGS["capture_mode"]]
+    print("Setting Capture Mode:", cap_mode)
+    cap.frame_mode = (cap_mode[0], cap_mode[1], cap_mode[2])
     cap.get_frame_robust()
     time.sleep(1)
 
-    print(cap.avaible_modes)
     print("--- Available Controls & Init Values: ---")
     for control in controls_dict:
         print(f"{control}: {controls_dict[control].value}")
@@ -328,6 +332,7 @@ logging.basicConfig(level=logging.INFO)
 with open('scope_settings.json', 'r') as f:
     UVC_SETTINGS = json.load(f)
     CAP_FPS = UVC_SETTINGS["video_cap_fps"]
+    STREAM_FPS = UVC_SETTINGS["stream_fps"]
     FOCUS = UVC_SETTINGS["Absolute Focus"]
 
 # Find the G-Scope device number within all attached devices.
