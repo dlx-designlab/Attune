@@ -312,7 +312,7 @@ def init_scope():
     print("---------------------------")
 
     # Set the Manual Focus Again (PYUVC workaround)
-    controls_dict['Absolute Focus'].value = FOCUS
+    # controls_dict['Absolute Focus'].value = FOCUS
 
 
 # commandline argument parser

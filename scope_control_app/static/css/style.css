@@ -128,16 +128,43 @@ button:disabled {
 }
 
 .settings-slider-button{
-    width: 20px;
-    height: 20px;
+    width: 25px;
+    height: 25px;
     padding: 0px;
     margin: 0px;
-    border-radius: 10px;
+    border-radius: 12px;
+    vertical-align: top;
 }
 
 .setting-slider{
-
+    -webkit-appearance: none;  /* Override default CSS styles */
+    appearance: none;
+    background: #d3d3d3; /* Grey background */
+    outline: none; /* Remove outline */
+    opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
+    -webkit-transition: .2s; /* 0.2 seconds transition on hover */
+    transition: opacity .2s;
 }
+
+.setting-slider:hover {
+    opacity: 1; /* Fully shown on mouse-over */
+}
+
+.setting-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; /* Override default look */
+    appearance: none;
+    width: 15px; /* Set a specific slider handle width */
+    height: 15px; /* Slider handle height */
+    background: crimson; /* Green background */
+    cursor: pointer; /* Cursor on hover */
+  }
+  
+  .setting-slider::-moz-range-thumb {
+    width: 15px; /* Set a specific slider handle width */
+    height: 15px; /* Slider handle height */
+    background: crimson; /* Green background */
+    cursor: pointer; /* Cursor on hover */
+  }
 
 /* The Close Button */
 .close-settings-panel{

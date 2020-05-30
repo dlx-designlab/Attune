@@ -146,10 +146,20 @@
 
 <script>
     
-    // a PYUVC workaround >> Adjust scope focus when app loads 
-    window.onload = (event) => {
+    // a PYUVC workaround >> re-adjust scope settings + focus when app loads 
+    window.onload = (event) => {        
+        set_scope_control('Auto Exposure Mode', {{ scopeSettings['Auto Exposure Mode'].value }} );
+        set_scope_control('Absolute Exposure Time', {{ scopeSettings['Absolute Exposure Time'].value }} );
+        set_scope_control('Backlight Compensation', {{ scopeSettings['Backlight Compensation'].value }} );
+        set_scope_control('Brightness', {{ scopeSettings['Brightness'].value }} );
+        set_scope_control('Contrast', {{ scopeSettings['Contrast'].value }} );
+        set_scope_control('Gain', {{ scopeSettings['Gain'].value }} );
+        set_scope_control('Hue', {{ scopeSettings['Hue'].value }} );
+        set_scope_control('Saturation', {{ scopeSettings['Saturation'].value }} );
+        set_scope_control('Gamma', {{ scopeSettings['Gamma'].value }} );
+        set_scope_control('White Balance temperature,Auto', {{ scopeSettings['White Balance temperature,Auto'].value }} );
+        set_scope_control('White Balance temperature', {{ scopeSettings['White Balance temperature'].value }} );        
         set_scope_control('Absolute Focus', 0);
-        console.log('adjusing focus...');
     };
 
     // + - buttons to control sliders settings
@@ -167,11 +177,11 @@
             var btnId = this.id
             switch(btnId){
                 case "plus":
+                    // console.log(sliderId + "+");
                     newSliderValue = currentSliderValue + 1;
-                    console.log(sliderId + "+");
                     break;
                 case "minus":
-                    console.log(sliderId + "-");
+                    // console.log(sliderId + "-");
                     newSliderValue = currentSliderValue - 1;
                     break;
             }
@@ -201,40 +211,30 @@
 
             switch(controlId){
                 case "wbSlider":
-                    console.log("White Balance temperature:" + this.value);
                     set_scope_control('White Balance temperature', this.value)
                     break;
                 case "brightnessSlider":
-                    console.log("Brightness:" + this.value);
                     set_scope_control('Brightness', this.value)
                     break;
                 case "exposureSlider":
-                    console.log("Exposure:" + this.value);
                     set_scope_control('Absolute Exposure Time', this.value)
                     break;
-                    
                 case "contrastSlider":
-                    console.log("Contrast:" + this.value);
                     set_scope_control('Contrast', this.value)
                     break;
                 case "hueSlider":
-                    console.log("Hue:" + this.value);
                     set_scope_control('Hue', this.value)
                     break;
                 case "satSlider":
-                    console.log("Saturation:" + this.value);
                     set_scope_control('Saturation', this.value)
                     break;
                 case "gainSlider":
-                    console.log("Gain:" + this.value);
                     set_scope_control('Gain', this.value)
                     break;
                 case "gammaSlider":
-                    console.log("Gamma:" + this.value);
                     set_scope_control('Gamma', this.value)
                     break;
                 case "blcSlider":
-                    console.log("Backlight Compensation:" + this.value);
                     set_scope_control('Backlight Compensation', this.value)
                     break;
             }
@@ -243,7 +243,7 @@
 
     // Set Scope Controls values function
     function set_scope_control(ctl, val) {
-
+      console.log('Adjusing ' + ctl + ' to ' + val);
       $.ajax({
           type: 'POST',
           url: "/set_control",
