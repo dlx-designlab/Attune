@@ -1,7 +1,7 @@
 {
 "capture_mode": 3,
 "stream_fps": 12,
-"scope_reset_freq": 180,
+"scope_reset_freq": 10,
 "video_cap_w": 1280,
 "video_cap_h": 720,
 "video_cap_duration": 5,

@@ -37,6 +37,7 @@ STREAM_FPS = 12
 UVC_SETTINGS = None
 # In Seconds, How often to reset the G-Scope to avoid crashing (PYUVC clock correction workaround)
 SCOPE_RESET_FREQ = 90
+SCOPE_RESET_REQUIRED = False
 
 
 @APP.route("/")
@@ -220,10 +221,18 @@ def make_file_name(req_data, file_ext):
 # Captures frames in the background (in a separate thread)
 def capture_frame():
     # grab global references to the video stream, output frame, and lock variables
-    global cap, outputFrame, lock, isCapturing
+    global SCOPE_RESET_REQUIRED, cap, outputFrame, lock, isCapturing
+    cap_mode = cap.avaible_modes[UVC_SETTINGS["capture_mode"]]
 
     while True:
         if isCapturing:            
+            # reset scope capture setting every "SCOPE_RESET_FREQ" seconds. 
+            # A workaround to avoid PYUVC clock correction and app crashing
+            if SCOPE_RESET_REQUIRED:
+                cap.frame_mode = (cap_mode[0], cap_mode[1], cap_mode[2])
+                SCOPE_RESET_REQUIRED = False
+
+            # Grab a frame from the Scope
             frame = cap.get_frame_robust()
             with lock:
                 outputFrame = frame
@@ -233,10 +242,9 @@ def capture_frame():
 
 def generate():
     # grab global references to the output frame and lock variables
-    global outputFrame, lock, isCapturing
+    global SCOPE_RESET_REQUIRED, outputFrame, lock, isCapturing
 
     start_time = time.time()
-    cap_mode = cap.avaible_modes[UVC_SETTINGS["capture_mode"]]
 
     # An image to display when the scope is off
     placeholder_image = open("static/img/scope_off.jpg", "rb").read()
@@ -246,13 +254,13 @@ def generate():
         time.sleep(1 / STREAM_FPS)
 
         with lock:
-            # reset scope capture setting ever "SCOPE_RESET_FREQ" sec. 
+            # reset scope capture setting every "SCOPE_RESET_FREQ" seconds.
             # A workaround to avoid PYUVC clock correction and app crashing
+            # The actual settings reset is happening in capture_frame() to avoid crashes
             elapsed_time = time.time() - start_time
             if elapsed_time > SCOPE_RESET_FREQ:
+                SCOPE_RESET_REQUIRED = True
                 start_time = time.time()
-                cap.frame_mode = (cap_mode[0], cap_mode[1], cap_mode[2])
-
             if isCapturing and outputFrame is None:
                 continue
 
