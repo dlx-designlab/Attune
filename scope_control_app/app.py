@@ -30,9 +30,13 @@ isCapturing = True
 cap = None
 controls_dict = dict()
 FOCUS = 100
+# the FPS at which videos are being captured
 CAP_FPS = 20
-STREAM_FPS = 10
+# the FPS at whiche the videos is streamed to the browser
+STREAM_FPS = 12
 UVC_SETTINGS = None
+# In Seconds, How often to reset the G-Scope to avoid crashing (PYUVC clock correction workaround)
+SCOPE_RESET_FREQ = 90
 
 
 @APP.route("/")
@@ -121,7 +125,7 @@ def save_image():
 def save_video():
 
     # how long is the captured video (in frames)
-    frames_to_capture = 80
+    frames_to_capture = UVC_SETTINGS["video_cap_duration"] * CAP_FPS
 
     if isCapturing:
         filename = make_file_name(request.get_json(), "mp4")
@@ -217,6 +221,7 @@ def make_file_name(req_data, file_ext):
 def capture_frame():
     # grab global references to the video stream, output frame, and lock variables
     global cap, outputFrame, lock, isCapturing
+
     while True:
         if isCapturing:            
             frame = cap.get_frame_robust()
@@ -230,6 +235,9 @@ def generate():
     # grab global references to the output frame and lock variables
     global outputFrame, lock, isCapturing
 
+    start_time = time.time()
+    cap_mode = cap.avaible_modes[UVC_SETTINGS["capture_mode"]]
+
     # An image to display when the scope is off
     placeholder_image = open("static/img/scope_off.jpg", "rb").read()
 
@@ -238,6 +246,13 @@ def generate():
         time.sleep(1 / STREAM_FPS)
 
         with lock:
+            # reset scope capture setting ever "SCOPE_RESET_FREQ" sec. 
+            # A workaround to avoid PYUVC clock correction and app crashing
+            elapsed_time = time.time() - start_time
+            if elapsed_time > SCOPE_RESET_FREQ:
+                start_time = time.time()
+                cap.frame_mode = (cap_mode[0], cap_mode[1], cap_mode[2])
+
             if isCapturing and outputFrame is None:
                 continue
 
@@ -303,6 +318,9 @@ def init_scope():
     cap.get_frame_robust()
     time.sleep(1)
 
+    # Set the FPS for video capturing from the scope
+    CAP_FPS = cap_mode[2]
+
     print("--- Available Controls & Init Values: ---")
     for control in controls_dict:
         print(f"{control}: {controls_dict[control].value}")
@@ -331,8 +349,8 @@ logging.basicConfig(level=logging.INFO)
 # Load scope settings from a JSON File
 with open('scope_settings.json', 'r') as f:
     UVC_SETTINGS = json.load(f)
-    CAP_FPS = UVC_SETTINGS["video_cap_fps"]
     STREAM_FPS = UVC_SETTINGS["stream_fps"]
+    SCOPE_RESET_FREQ = UVC_SETTINGS["scope_reset_freq"]
     FOCUS = UVC_SETTINGS["Absolute Focus"]
 
 # Find the G-Scope device number within all attached devices.
