@@ -226,16 +226,16 @@ def capture_frame():
 
     while True:
         if isCapturing:            
+            # reset scope capture setting every "SCOPE_RESET_FREQ" seconds. 
+            # A workaround to avoid PYUVC clock correction and app crashing
+            # if SCOPE_RESET_REQUIRED:
+            #         cap.frame_mode = (cap_mode[0], cap_mode[1], cap_mode[2])
+            #         SCOPE_RESET_REQUIRED = False
+
             # Grab a frame from the Scope
             frame = cap.get_frame_robust()
             with lock:
                 outputFrame = frame
-                
-                # reset scope capture setting every "SCOPE_RESET_FREQ" seconds. 
-                # A workaround to avoid PYUVC clock correction and app crashing
-                if SCOPE_RESET_REQUIRED:
-                    cap.frame_mode = (cap_mode[0], cap_mode[1], cap_mode[2])
-                    SCOPE_RESET_REQUIRED = False
 
         else:
             time.sleep(0.5)
@@ -258,10 +258,10 @@ def generate():
             # reset scope capture setting every "SCOPE_RESET_FREQ" seconds.
             # A workaround to avoid PYUVC clock correction and app crashing
             # The actual settings reset is happening in capture_frame() to avoid crashes
-            elapsed_time = time.time() - start_time
-            if elapsed_time > SCOPE_RESET_FREQ:
-                SCOPE_RESET_REQUIRED = True
-                start_time = time.time()
+            # elapsed_time = time.time() - start_time
+            # if elapsed_time > SCOPE_RESET_FREQ:
+            #     SCOPE_RESET_REQUIRED = True
+            #     start_time = time.time()
             if isCapturing and outputFrame is None:
                 continue
 
