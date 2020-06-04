@@ -145,9 +145,8 @@
 <script src="{{ url_for('static', filename='scripts/jquery.min.js') }}"></script>
 
 <script>
-    
     // a PYUVC workaround >> re-adjust scope settings + focus when app loads 
-    window.onload = (event) => {        
+    document.addEventListener('DOMContentLoaded', (event) => {
         set_scope_control('Auto Exposure Mode', {{ scopeSettings['Auto Exposure Mode'].value }} );
         set_scope_control('Absolute Exposure Time', {{ scopeSettings['Absolute Exposure Time'].value }} );
         set_scope_control('Backlight Compensation', {{ scopeSettings['Backlight Compensation'].value }} );
@@ -160,10 +159,7 @@
         set_scope_control('White Balance temperature,Auto', {{ scopeSettings['White Balance temperature,Auto'].value }} );
         set_scope_control('White Balance temperature', {{ scopeSettings['White Balance temperature'].value }} );        
         set_scope_control('Absolute Focus', 0);
-
-        // var is_mobile = detectMob();
-
-    };
+    });
 
     // + - buttons to control sliders settings
     var slidersButtons = document.getElementById("settingsPanel").querySelectorAll(".settings-slider-button");
