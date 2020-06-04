@@ -222,7 +222,7 @@ def make_file_name(req_data, file_ext):
 def capture_frame():
     # grab global references to the video stream, output frame, and lock variables
     global SCOPE_RESET_REQUIRED, cap, outputFrame, lock, isCapturing
-    cap_mode = cap.avaible_modes[UVC_SETTINGS["capture_mode"]]
+    # cap_mode = cap.avaible_modes[UVC_SETTINGS["capture_mode"]]
 
     while True:
         if isCapturing:            

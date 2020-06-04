@@ -1,11 +1,11 @@
 {
 "capture_mode": 3,
 "stream_fps": 12,
-"scope_reset_freq": 10,
 "video_cap_w": 1280,
 "video_cap_h": 720,
 "video_cap_duration": 5,
 "setting_available": true,
+"scope_reset_freq": 240,
 "Auto Focus": 0,
 "White Balance temperature,Auto": 0,
 "Absolute Focus": 110,
