@@ -40,7 +40,7 @@
 
 <body>
 
-<div class="bgimg">
+<div class="bgimg" id="bg-main-video">
     
     <div id="captureIndicator" class="capture-indicator w3-display-topmiddle">** CAPTURING ** </div>
     
@@ -147,6 +147,7 @@
 <script>
     // a PYUVC workaround >> re-adjust scope settings + focus when app loads 
     document.addEventListener('DOMContentLoaded', (event) => {
+        // document.getElementById("bg-main-video").style.backgroundImage = 'url( "{{ url_for('video_feed') }}" )';
         set_scope_control('Auto Exposure Mode', {{ scopeSettings['Auto Exposure Mode'].value }} );
         set_scope_control('Absolute Exposure Time', {{ scopeSettings['Absolute Exposure Time'].value }} );
         set_scope_control('Backlight Compensation', {{ scopeSettings['Backlight Compensation'].value }} );
@@ -158,7 +159,8 @@
         set_scope_control('Gamma', {{ scopeSettings['Gamma'].value }} );
         set_scope_control('White Balance temperature,Auto', {{ scopeSettings['White Balance temperature,Auto'].value }} );
         set_scope_control('White Balance temperature', {{ scopeSettings['White Balance temperature'].value }} );        
-        set_scope_control('Absolute Focus', 0);
+        // set the focus last with a slight delay
+        setTimeout(() => {  set_scope_control('Absolute Focus', 0); }, 500);
     });
 
     // + - buttons to control sliders settings

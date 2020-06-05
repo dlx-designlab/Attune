@@ -14,7 +14,7 @@ print("Availbale Capture Modes:")
 for count, mode in enumerate(cap.avaible_modes):
     print(count, mode)
 
-capture_mode = cap.avaible_modes[3]
+capture_mode = cap.avaible_modes[0]
 cap.frame_mode = (capture_mode[0], capture_mode[1], capture_mode[2])
 
 # Uncomment the following lines to configure the Pupil 200Hz IR cameras:
@@ -22,7 +22,7 @@ cap.frame_mode = (capture_mode[0], capture_mode[1], capture_mode[2])
 # controls_dict['Auto Exposure Mode'].value = 1
 # controls_dict['Gamma'].value = 200
 
-start_time=time.time()
+# start_time=time.time()
 
 # Capture some frames
 while True:
@@ -31,14 +31,14 @@ while True:
 
     frame = cap.get_frame_robust()
     cv2.imshow("img", frame.bgr)
-
+    time.sleep(1/capture_mode[2])
     # print(frame.img.shape)
 
-    elapsed_time = time.time() - start_time
-    if elapsed_time > 90:
-        print("time reset")
-        start_time = time.time()
-        cap.frame_mode = (capture_mode[0], capture_mode[1], capture_mode[2])
+    # elapsed_time = time.time() - start_time
+    # if elapsed_time > 90:
+    #     print("time reset")
+    #     start_time = time.time()
+    #     cap.frame_mode = (capture_mode[0], capture_mode[1], capture_mode[2])
 
 
     # App controls
