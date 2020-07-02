@@ -100,4 +100,8 @@ target/
 .DS_Store
 .AppleDouble
 .LSOverride
+.pylintrc
+.vscode
+.DS_Store
 scope_control_app/pics/
+apex_detector/data/
