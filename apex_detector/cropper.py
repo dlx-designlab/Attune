@@ -1,4 +1,5 @@
-import numpy as np
+""" Capilary Apex cropper from labeled images """
+# import numpy as np
 import cv2
 import json
 import random

@@ -8,9 +8,9 @@ import numpy as np
 import functions
 
 sample_size = 60
-min_conf = 0.75
+min_conf = 0.70
 sl_win_step = 10
-box_overlap_thresh = 0.3
+box_overlap_thresh = 0.2
 
 # initialize the data matrix and labels
 print("[INFO] extracting features...")
@@ -33,7 +33,7 @@ for imagePath in paths.list_images("data/training/"):
         image = cv2.resize(image, (60,60), interpolation=cv2.INTER_CUBIC)
 
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    # extract Histogram of Oriented Gradients from the logo
+    # extract Histogram of Oriented Gradients from the image
     H = feature.hog(gray,
                     orientations=9,
                     pixels_per_cell=(10, 10),
@@ -59,7 +59,7 @@ model.fit(data, labels)
 print("[INFO] Evaluating...")
 
 # Load test image
-test_img = cv2.imread("data/test/full_frame/cap00106.jpg")
+test_img = cv2.imread("data/test/full_frame/cap00013.png")
 test_gray = cv2.cvtColor(test_img, cv2.COLOR_BGR2GRAY)
 
 # create an array of detected objects

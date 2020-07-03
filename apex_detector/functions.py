@@ -1,3 +1,4 @@
+""" Helper Functions fot eh Capilary Apex Classifier """
 import imutils
 import numpy as np
 
