@@ -9,7 +9,7 @@ import os
 
 sample_size = 60
 data = []
-threshold = 13000
+threshold = 110000
 data_path = "data/training/cap/"
 
 for imagePath in paths.list_images(data_path):
@@ -31,7 +31,8 @@ for imagePath in paths.list_images(data_path):
     # cv2.imshow("smoothed3", smoothed3)
     # cv2.imshow("smoothed4", smoothed4)
     # cv2.imshow("smoothed5", smoothed5)                    
-    # cv2.waitKey(0)
+    cv2.imshow("smoothed", smoothed)                    
+    cv2.waitKey(0)
 
     # Check image Size is correct
     # if image.shape[0] < sample_size or image.shape[1] < sample_size:
@@ -42,9 +43,12 @@ for imagePath in paths.list_images(data_path):
     # sobelx = cv2.Sobel(gray,cv2.CV_64F,1,0,ksize=5)
     # sobely = cv2.Sobel(gray,cv2.CV_64F,0,1,ksize=5)
 
-    laplacian = cv2.Laplacian(gray, cv2.CV_64F, ksize=3)
+    laplacian = cv2.Laplacian(gray, cv2.CV_64F, ksize=5)
     lap_abs = cv2.convertScaleAbs(laplacian)
     lap_abs_sum = np.sum(lap_abs)
+    
+    # print(f"image name: {imagePath}")
+    # print(f"Laplacian Summary: {lap_abs_sum}")
 
     if lap_abs_sum < threshold:
         file_name = imagePath.split("/")[-1]
