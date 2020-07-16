@@ -1,7 +1,9 @@
 """ Capilary Apex Classifier Test"""
 from sklearn.ensemble import RandomForestClassifier
+from sklearn import svm
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+import time
 
 # from skimage import exposure
 from skimage import feature
@@ -15,9 +17,10 @@ import matplotlib.pyplot as plt
 
 sample_size = 60
 min_conf = 0.73
-sl_win_step = 10
+sl_win_step = 20
 box_overlap_thresh = 0.3
 nr_level = 5
+laplacian_threshold = 110000
 
 # initialize the data matrix and labels
 print("[INFO] extracting features...")
@@ -25,14 +28,13 @@ data = []
 labels = []
 
 def enhance_green(img):
-    # remoe noise
+    # remove noise
     img = cv2.medianBlur(img, nr_level)
-    
     # split RGB channels
     img_blue_c1, img_green_c1, img_red_c1 = cv2.split(img)
-    
+
     # img_green_c1 = cv2.medianBlur(img_green_c1, 5)
-    
+
     # decide the Limit and the Grid size
     # clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     # cl1 = clahe.apply(img_green_c1) 
@@ -49,16 +51,23 @@ for imagePath in paths.list_images("data/training/"):
 
     # load the image, convert it to grayscale, and detect edges
     image = cv2.imread(imagePath)
+  
+    # image = cv2.resize(image, (30, 30), interpolation=cv2.INTER_CUBIC) #0.93288
+    # image = cv2.resize(image, (30, 30), interpolation=cv2.INTER_AREA) #0.9401
+    # image = cv2.resize(image, (30, 30), interpolation=cv2.INTER_LANCZOS4) #0.9306
+    # image = cv2.resize(image, (30, 30), interpolation=cv2.INTER_NEAREST) #0.9390
+    # image = cv2.resize(image, (30, 30), interpolation=cv2.INTER_LINEAR) #0.0.9373
+
 
     # Check image Size is correct and fix
     if image.shape[0] < sample_size or image.shape[1] < sample_size:
-        print(imagePath, image.shape)
-        image = cv2.resize(image, (60,60), interpolation=cv2.INTER_CUBIC)
+        print(f"resizing: {imagePath} original size: {image.shape} to {sample_size} x {sample_size}")
+        image = cv2.resize(image, (sample_size, sample_size), interpolation=cv2.INTER_CUBIC)
 
     # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # gray = cv2.medianBlur(gray, 5)
     gray = enhance_green(image)
-    
+
     # extract Histogram of Oriented Gradients from the image
     H = feature.hog(gray,
                     orientations=9,
@@ -79,21 +88,24 @@ print(f"Labels: {len(labels)}")
 # train_results = []
 # test_results =[]
 
-# print("splitting data...")
-# x_train, x_test, y_train, y_test = train_test_split(data, labels, test_size=0.25, random_state=4)
-# # "train" the Random Forest classifier
-# print("training...")
+print("splitting data...")
+x_train, x_test, y_train, y_test = train_test_split(data, labels, test_size=0.25, random_state=4)
+# "train" the Random Forest classifier
+print("training...")
+
 # rf = RandomForestClassifier(n_estimators=32, random_state=42)
-# rf.fit(x_train, y_train)
+rf = svm.LinearSVC(max_iter=10, random_state=42)
 
-# print("[INFO] Predicting...")
-# train_pred = rf.predict(x_train)
-# test_pred = rf.predict(x_test)
+rf.fit(x_train, y_train)
 
-# train_score = accuracy_score(y_train, train_pred)
-# test_score = accuracy_score(y_test, test_pred)
+print("[INFO] Predicting...")
+train_pred = rf.predict(x_train)
+test_pred = rf.predict(x_test)
 
-# print(f"train score: {train_score}, test score: {test_score}")
+train_score = accuracy_score(y_train, train_pred)
+test_score = accuracy_score(y_test, test_pred)
+
+print(f"train score: {train_score}, test score: {test_score}")
 
 #####
 
@@ -129,48 +141,80 @@ print(f"Labels: {len(labels)}")
 
 # "train" the Random Forest classifier
 print("[INFO] Training classifier...")
-model = RandomForestClassifier(n_estimators=36, random_state=42)
+# model = RandomForestClassifier(n_estimators=36, random_state=42)
+model = svm.LinearSVC(max_iter=10, random_state=42)
 model.fit(data, labels)
 
 print("[INFO] Evaluating...")
+
+# Measure exection time
+start_time = time.time()
+
 # Load test image
 test_img = cv2.imread("data/test/full_frame/cap00074.jpg")
+# test_img = cv2.resize(test_img, (640, 360), interpolation=cv2.INTER_AREA)
 test_gray = enhance_green(test_img)
 # test_gray = cv2.cvtColor(test_img, cv2.COLOR_BGR2GRAY)
+
+# crop top half of the test img
+test_gray = test_gray[0:360, 0:1280]
+
+
 
 # create an array of detected objects
 # detected_objects = np.array([(0, 0, 60, 60)])
 detected_objects = []
 # Run sliding windows
-(winW, winH) = (sample_size, sample_size)
+(winW, winH) = (sample_size, sample_size) 
 for (x, y, window) in functions.sliding_window(test_gray,
                                                stepSize=sl_win_step,
                                                windowSize=(winW, winH)):
     # if the window does not meet our desired window size, ignore it
     if window.shape[0] != winH or window.shape[1] != winW:
         continue
+  
+    # print(f"Window: {x}, {y}")
 
-    # Apply Classifier: Extract HOG from the twindow and predict
-    window = cv2.medianBlur(window, nr_level)
-    (H) = feature.hog(window,
-                      orientations=9,
-                      pixels_per_cell=(10, 10),
-                      cells_per_block=(3, 3),
-                      transform_sqrt=True, 
-                      block_norm="L1")
+    # Test if the sample has enough gragients for analysis
+    laplacian = cv2.Laplacian(window, cv2.CV_64F, ksize=5)
+    lap_abs = cv2.convertScaleAbs(laplacian)
+    lap_abs_sum = np.sum(lap_abs)
 
-    # pred = model.predict(H.reshape(1, -1))[0]
-    pred = model.predict_proba(H.reshape(1, -1))[0]
+    # if we have enough gradients, apply classifier and predict content 
+    if lap_abs_sum > laplacian_threshold:
+        # Apply Classifier: Extract HOG from the window and predict
+        # s_time = time.time()
+        (H) = feature.hog(window,
+                        orientations=9,
+                        pixels_per_cell=(10, 10),
+                        cells_per_block=(3, 3),
+                        transform_sqrt=True,
+                        block_norm="L1")
+        # print(f"Feature Extraction Took: {time.time() - s_time} sec")
 
-    # add detection frame to the image
-    if pred[0] > min_conf:
-        detected_objects.append([x, y, x + winW, y + winH, int(pred[0]*100)])
-        # detected_objects = np.append(detected_objects, [(x, y, x + winW, y + winH)], axis=0)
+        # Predict the content of the window (apex or not)
+        # s_time = time.time()
+        # pred = model.predict(H.reshape(1, -1))[0]
+        # pred = model.predict_proba(H.reshape(1, -1))[0]
+        # pred = model.predict(H.reshape(1, -1))[0]
+        pred_conf = int(model.decision_function(H.reshape(1, -1))[0] * 100)
+        # print(f"Prediction Took: {time.time() - s_time} sec")
+
+        # add detection frame to the image
+        # if pred[0] > min_conf:
+        if pred_conf < 0:
+            # detected_objects.append([x, y, x + winW, y + winH, int(pred[0]*100)])
+            detected_objects.append([x, y, x + winW, y + winH, abs(pred_conf)])
+            # detected_objects = np.append(detected_objects, [(x, y, x + winW, y + winH)], axis=0)
 
 
 # convert detected objects to NumPy Arra and preform Non-Maximum Suppression
+# s_time = time.time()  
 detected_objects_array = np.array(detected_objects)
 refined_detector = functions.non_max_suppression_fast(detected_objects_array, box_overlap_thresh)
+# print(f"Refining results took: {time.time() - s_time} sec")
+print(f"Total Took: {time.time() - start_time} seconds ---")
+print("[INFO] Done!")
 
 clone_img = test_img.copy()
 
@@ -182,13 +226,13 @@ clone_img = test_img.copy()
 # Draw Refined results:
 for box in refined_detector:
     cv2.rectangle(clone_img, (box[0], box[1]), (box[2], box[3]), (0, 255, 0), 1)
-    cv2.putText(clone_img, f"{box[4]}%", (box[0], box[1]-3), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0))
+    # cv2.putText(clone_img, f"{box[4]}%", (box[0], box[1]-3), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0))
+    cv2.putText(clone_img, f"{box[4]}", (box[0], box[1]-3), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0))
 
-print("[INFO] Done!")
 cv2.imshow("RESULT!", clone_img)
 cv2.waitKey(0)
 
-
+########################
 # cv2.waitKey(1)
 
 # Create an large image placeholder for the results
