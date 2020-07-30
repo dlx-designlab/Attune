@@ -4,7 +4,6 @@
 "video_cap_w": 1280,
 "video_cap_h": 720,
 "video_cap_duration": 5,
-"setting_available": true,
 "scope_reset_freq": 240,
 "Auto Focus": 0,
 "White Balance temperature,Auto": 0,
@@ -19,5 +18,9 @@
 "Gain": 0,
 "Brightness": 35,
 "Auto Exposure Mode": 1,
-"Absolute Exposure Time": 365
+"Absolute Exposure Time": 365,
+"setting_available": true,
+"robo_scope_mode": true,
+"grbl_controller_address": "/dev/ttyAMA0",
+"default_step_size": 0.5
 }

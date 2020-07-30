@@ -45,12 +45,52 @@
     <div id="captureIndicator" class="capture-indicator w3-display-topmiddle">** CAPTURING ** </div>
     
     <div id="leftButtonsPanel" class="buttons-panel w3-display-left">  
-        {% if settingsMode == True %}
-            <button id="settingsBtn" class="settings-button fas fa-cog fa-1_5x"></button>
+        <button class="fas fa-images fa-1_5x" onclick="window.location.href = '/img_gallery';"></button>
+        {% if roboscopeMdde == True %}
+            <button id="motionControlBtn" class="fas fa-arrows-alt fa-1_5x"></button>
         {% endif %}
-        <button class="gallery-button fas fa-images fa-1_5x" onclick="window.location.href = '/img_gallery';"></button>
+        {% if settingsMode == True %}
+            <button id="settingsBtn" class="fas fa-cog fa-1_5x"></button>
+        {% endif %}
     </div>
 
+    <div id="motionControlPanel" class="settings-panel w3-display-left">
+        <span class="close-settings-panel">&times;</span>        
+        <div class="motion-controls-header">
+            <h3>Roboscope Controls</h3>
+        </div>
+        <table>
+            <tr>
+                <td><button class="fas fa-home fa-sm" onclick="send_grbl_command('H', 0)"></button></td>
+                <td><button class="fas fa-home fa-sm" onclick="send_grbl_command('H', 0)"></button></td>
+                <td></td>
+                <td>
+                    <!-- <label for="stepSizeSelector" class="step-size-label">Step Size</label> -->
+                    <input type="number" id="stepSizeSelector" name="step-size" value="{{ step_size }}" min="0.1" max="5" step="0.1" onchange="update_step_size()">                
+                </td>
+            </tr>
+            <tr>
+              <td></td>
+              <td><button class="fas fa-arrow-up fa-sm" onclick="send_grbl_command('Y', -1)"></button></td>
+              <td></td>
+              <td><button class="fas fa-arrow-up fa-sm" onclick="send_grbl_command('Z', -1)"></button></td>
+            </tr>
+            <tr>
+              <td><button class="fas fa-arrow-left fa-sm" onclick="send_grbl_command('X', 1)"></button></td>
+              <td>X/Y</td>
+              <td><button class="fas fa-arrow-right fa-sm" onclick="send_grbl_command('X', -1)"></button></td>
+              <td>Z</td>              
+            </tr>
+            <tr>
+                <td></td>
+                <td><button class="fas fa-arrow-down fa-sm" onclick="send_grbl_command('Y', 1)"></button></td>
+                <td></td>
+                <td><button class="fas fa-arrow-down fa-sm" onclick="send_grbl_command('Z', 1)"></button></td>
+              </tr>
+        </table>        
+    
+    </div>
+    
     <div id="settingsPanel" class="settings-panel w3-display-left">
         
         <span class="close-settings-panel">&times;</span>
@@ -114,9 +154,9 @@
     </div>
 
   <div class="buttons-panel w3-display-right">
-      <button class="focus-control-button fas fa-plus fa-1_5x" onclick="set_scope_control('Absolute Focus', 1)"> </button>
-      <button class="focus-control-button fas fa-bullseye fa-1_5x" onclick="set_scope_control('Auto Focus', 1)"> </button>
-      <button class="focus-control-button fas fa-minus fa-1_5x" onclick="set_scope_control('Absolute Focus', -1)"> </button>
+      <button class="fas fa-plus fa-1_5x" onclick="set_scope_control('Absolute Focus', 1)"></button>
+      <button class="fas fa-bullseye fa-1_5x" onclick="set_scope_control('Auto Focus', 1)"></button>
+      <button class="fas fa-minus fa-1_5x" onclick="set_scope_control('Absolute Focus', -1)"></button>
   </div>
 
   <div class="w3-display-bottommiddle">
@@ -260,6 +300,57 @@
 
     };
 
+    // Keyboard keys to control scope motion 
+    $(window).keydown(function(e) {
+        // console.log(e.keyCode)
+        switch (e.keyCode) {
+            case 72: // 'H' Key
+                send_grbl_command('H', 0)
+                break;
+            case 87: // 'W' Key
+                send_grbl_command('Y', -1)
+                break;
+            case 83: // 'S' Key
+                send_grbl_command('Y', 1)
+                break;        
+            case 65: // 'A' Key
+                send_grbl_command('X', 1)
+                break;
+            case 68: // 'D' Key
+                send_grbl_command('X', -1)
+                break;                                
+            case 81: // 'Q' Key
+                send_grbl_command('Z', -1)
+                break;
+            case 90: // 'Z' Key
+                send_grbl_command('Z', 1)
+                break;                                
+        }
+    });
+
+    function send_grbl_command(cmd, val){
+      console.log('Sending ' + cmd + ' ' + val);
+      $.ajax({
+          type: 'POST',
+          url: "/grbl",
+          contentType: 'application/json;charset=UTF-8',
+          data: JSON.stringify({'command': cmd, 'value': val}),
+          success: function(result) {
+                document.getElementById("status").innerHTML = result;
+          },
+          error: function(result) {
+                document.getElementById("status").innerHTML = "ERROR!";
+          }
+      });
+
+
+    };
+
+    function update_step_size(){
+        var step = document.getElementById("stepSizeSelector").value;
+        send_grbl_command("S", step)
+    }
+
     // Capture Scope image
     function capture_scope_feed(capture_path){
       var timeStamp = new Date().getTime();
@@ -310,17 +401,31 @@
     // Settings Panel Popup Control
     var settingsPopup = document.getElementById("settingsPanel");
     var settingsBtn = document.getElementById("settingsBtn");
+    
+    var motionCtlPopup = document.getElementById("motionControlPanel");        
+    var motionCtlBtn = document.getElementById("motionControlBtn");
+
     var leftBtnsPanel = document.getElementById("leftButtonsPanel");
-    var span = document.getElementsByClassName("close-settings-panel")[0];
+    var closePanelButtons = document.querySelectorAll(".close-settings-panel");
 
     settingsBtn.onclick = function() {
       settingsPopup.style.display = "block";
       leftBtnsPanel.style.display="none";
     }
-    span.onclick = function() {
-      settingsPopup.style.display = "none";
-      leftBtnsPanel.style.display = "block";
+
+    motionCtlBtn.onclick = function() {
+      motionCtlPopup.style.display = "block";
+      leftBtnsPanel.style.display="none";
     }
+
+    closePanelButtons.forEach(item => {
+        item.onclick = function() {
+          settingsPopup.style.display = "none";
+          motionCtlPopup.style.display = "none";      
+          leftBtnsPanel.style.display = "block";
+        }
+    });
+
     // window.onclick = function(event) {
     //   if (event.target == modal) {
     //     modal.style.display = "none";

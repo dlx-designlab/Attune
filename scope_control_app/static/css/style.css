@@ -58,20 +58,6 @@ button:disabled {
   color: #666666;
 }
 
-.settings-button{
-    border-color: grey;
-    color: #333;
-    border-width: 0.35em;
-    display: block;
-}
-
-.gallery-button{
-    border-color: grey;
-    color: #333;
-    border-width: 0.35em;
-    display: block;
-}
-
 .title{
     color: #fff;
     text-align: center;
@@ -85,7 +71,7 @@ button:disabled {
 /*    background-color: rgba(255,255,255,0.5);*/
 }
 
-.focus-control-button{
+.buttons-panel button{
     border-color: grey;
     color: #333;
     border-width: 0.35em;
@@ -109,6 +95,27 @@ button:disabled {
 	padding: 5px 20px 20px 20px;
     /* width: 200px; */
     border-radius: 0px 10px 10px 0px;
+}
+
+.settings-panel td{
+    text-align: center;
+    font-size: 1.2em;
+}
+
+.settings-panel button{
+    border-radius: 20px;
+    margin: 5px;
+}
+
+.settings-panel input{
+    border-radius: 10px;
+    text-align: center;
+}
+
+.step-size-label{
+    display: block;
+    font-size: 0.7em;
+
 }
 
 .setting-block{
@@ -164,6 +171,10 @@ button:disabled {
     height: 15px; /* Slider handle height */
     background: crimson; /* Green background */
     cursor: pointer; /* Cursor on hover */
+  }
+
+  .motion-controls-header{
+      margin: 30px 0px 15px 0px;
   }
 
 /* The Close Button */

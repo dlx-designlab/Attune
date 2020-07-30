@@ -15,6 +15,8 @@ from pyfolder import PyFolder
 import cv2
 # Camera UVC Properties control library
 import uvc  # >> https://github.com/pupil-labs/pyuvc
+# GRBL Control Class
+from grbl import GrblControl
 # Flask web app framework
 from flask import (Flask, Response, jsonify, make_response, redirect,
                    render_template, request, send_file, url_for)
@@ -48,12 +50,22 @@ def index():
     # Check for existing cookie with UID. Make a new one if doesnt exist
     if cookies.get("scan_uuid"):
         uid = cookies.get("scan_uuid")
-        res = make_response(render_template("index.html", scopeSettings=controls_dict, userId=uid, settingsMode=UVC_SETTINGS["setting_available"]))
+        res = make_response(render_template("index.html", 
+                                            scopeSettings=controls_dict, 
+                                            userId=uid, 
+                                            settingsMode=UVC_SETTINGS["setting_available"], 
+                                            roboscopeMdde = UVC_SETTINGS["robo_scope_mode"],
+                                            step_size = UVC_SETTINGS["default_step_size"]))
     else:
         # Generate a random UID 8 characters long
         uid = uuid.uuid4().hex
         uid = uid.upper()[0:8]
-        res = make_response(render_template("index.html", scopeSettings=controls_dict, userId=uid, settingsMode=UVC_SETTINGS["setting_available"]))
+        res = make_response(render_template("index.html", 
+                                            scopeSettings=controls_dict, 
+                                            userId=uid, 
+                                            settingsMode=UVC_SETTINGS["setting_available"], 
+                                            roboscopeMdde = UVC_SETTINGS["robo_scope_mode"],
+                                            step_size = UVC_SETTINGS["default_step_size"]))
         # Create the cookie
         res.set_cookie(
             "scan_uuid",
@@ -98,6 +110,30 @@ def set_ctrl():
         res = "could not set!"
 
     print(res)
+    return res
+
+@APP.route('/grbl', methods=['POST'])
+def parse_grbl_cmd():
+    if request.method == 'POST' and request.is_json:
+        req_data = request.get_json()
+        cmd = req_data['command']
+        val = float(req_data['value'])
+        
+        if  cmd == 'H':
+            grbl_control.run_home_cycle()
+        elif cmd == 'S':
+            grbl_control.stepSize = val
+        elif cmd == 'X':
+            grbl_control.jog_scope_position(val, 0, 0)
+        elif cmd == 'Y':
+            grbl_control.jog_scope_position(0, val, 0)
+        elif cmd == 'Z':
+            grbl_control.jog_scope_position(0, 0, val)
+        
+        res = f"XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos}"
+    else:
+        res = "could not set!"
+
     return res
 
 
@@ -306,12 +342,6 @@ def get_current_focus(focus):
 def init_scope():
     global cap, UVC_SETTINGS, controls_dict, dev_list, scopeDeviceId
 
-    # Update LCD Display
-    # draw.rectangle([(0,0),(240,240)],fill = "BLACK")
-    # draw.text((5, 5), 'Conecting to G-Scope...', font=fnt, fill = "WHITE")
-    # img = disp_image.rotate(90)
-    # disp.ShowImage(img,0,0)
-
     # Add G-Scope as new capture device and get its control properties
     cap = uvc.Capture(dev_list[scopeDeviceId]["uid"])
     time.sleep(1)
@@ -374,6 +404,11 @@ print(f"G-Scope device id is: {scopeDeviceId}")
 # Connect to the scope...
 init_scope()
 
+# Connect to GRBL Positioning Controller
+if (UVC_SETTINGS["robo_scope_mode"]):
+    grbl_control = GrblControl(UVC_SETTINGS["grbl_controller_address"], UVC_SETTINGS["default_step_size"])
+else:
+    print("*** Roboscope Mode Disabled ***")
 
 # Start a thread that will capture frames from the scope
 CAPTURE_THREAD = threading.Thread(target=capture_frame, args=())
