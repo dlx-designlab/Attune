@@ -62,11 +62,12 @@
         <table>
             <tr>
                 <td><button class="fas fa-home fa-sm" onclick="send_grbl_command('H', 0)"></button></td>
-                <td><button class="fas fa-home fa-sm" onclick="send_grbl_command('H', 0)"></button></td>
+                <td><button class="fas fa-skull fa-sm" onclick=""></button></td>
                 <td></td>
                 <td>
                     <!-- <label for="stepSizeSelector" class="step-size-label">Step Size</label> -->
                     <input type="number" id="stepSizeSelector" name="step-size" value="{{ step_size }}" min="0.1" max="5" step="0.1" onchange="update_step_size()">                
+                    <input type="number" id="feedRateSelector" name="feed-rate" value="{{ feed_rate }}" min="100" max="1000" step="100" onchange="update_feed_rate()">                                    
                 </td>
             </tr>
             <tr>
@@ -161,7 +162,8 @@
 
   <div class="w3-display-bottommiddle">
       <button id="rec-img-btn" class="record-button fas fa-camera fa-1_5x"  onclick="capture_scope_feed('/save_image')"></button>
-      <button id="rec-vid-btn" class="record-button fas fa-video fa-1_5x"  onclick="capture_scope_feed('/save_vid')"></button>      
+      <button id="rec-pan-btn" class="record-button fas fa-expand fa-1_5x"  onclick="capture_scope_feed('/save_image_panorma')"></button>      
+      <button id="rec-vid-btn" class="record-button fas fa-video fa-1_5x"  onclick="capture_scope_feed('/save_vid')"></button>
   </div>
 
   <div class="status-log w3-display-bottomright">
@@ -348,7 +350,12 @@
 
     function update_step_size(){
         var step = document.getElementById("stepSizeSelector").value;
-        send_grbl_command("S", step)
+        send_grbl_command("STP", step)
+    }
+
+    function update_feed_rate(){
+        var feed = document.getElementById("feedRateSelector").value
+        send_grbl_command("FDR", feed)
     }
 
     // Capture Scope image
@@ -356,10 +363,12 @@
       var timeStamp = new Date().getTime();
       var captureIndicator = document.getElementById("captureIndicator");
       var recVidBtn = document.getElementById("rec-vid-btn");
+      var recPanBtn = document.getElementById("rec-pan-btn");      
       var recImgBtn = document.getElementById("rec-img-btn");
       
       captureIndicator.style.display = "block";
       recVidBtn.disabled = true;
+      recPanBtn.disabled = true;
       recImgBtn.disabled = true;
 
       $.ajax({
@@ -372,12 +381,14 @@
                 captureIndicator.style.display = "none";
                 recVidBtn.disabled = false;
                 recImgBtn.disabled = false;
+                recPanBtn.disabled = false;
           },
           error: function(result) {
                 document.getElementById("status").innerHTML = "ERROR!";
                 captureIndicator.style.display = "none";
                 recVidBtn.disabled = false;
                 recImgBtn.disabled = false;
+                recPanBtn.disabled = false;                
           }
       });
 

@@ -17,6 +17,9 @@ import cv2
 import uvc  # >> https://github.com/pupil-labs/pyuvc
 # GRBL Control Class
 from grbl import GrblControl
+# Sensors feed class
+from sensors import SensorsFeed
+
 # Flask web app framework
 from flask import (Flask, Response, jsonify, make_response, redirect,
                    render_template, request, send_file, url_for)
@@ -55,7 +58,8 @@ def index():
                                             userId=uid, 
                                             settingsMode=UVC_SETTINGS["setting_available"], 
                                             roboscopeMdde = UVC_SETTINGS["robo_scope_mode"],
-                                            step_size = UVC_SETTINGS["default_step_size"]))
+                                            step_size = UVC_SETTINGS["default_step_size"],
+                                            feed_rate = UVC_SETTINGS["default_feed_rate"]))
     else:
         # Generate a random UID 8 characters long
         uid = uuid.uuid4().hex
@@ -65,7 +69,8 @@ def index():
                                             userId=uid, 
                                             settingsMode=UVC_SETTINGS["setting_available"], 
                                             roboscopeMdde = UVC_SETTINGS["robo_scope_mode"],
-                                            step_size = UVC_SETTINGS["default_step_size"]))
+                                            step_size = UVC_SETTINGS["default_step_size"],
+                                            feed_rate = UVC_SETTINGS["default_feed_rate"]))
         # Create the cookie
         res.set_cookie(
             "scan_uuid",
@@ -121,16 +126,18 @@ def parse_grbl_cmd():
         
         if  cmd == 'H':
             grbl_control.run_home_cycle()
-        elif cmd == 'S':
+        elif cmd == 'STP':
             grbl_control.stepSize = val
+        elif cmd == 'FDR':
+            grbl_control.feedRate = val            
         elif cmd == 'X':
-            grbl_control.jog_scope_position(val, 0, 0)
+            grbl_control.jog_step(val, 0, 0)
         elif cmd == 'Y':
-            grbl_control.jog_scope_position(0, val, 0)
+            grbl_control.jog_step(0, val, 0)
         elif cmd == 'Z':
-            grbl_control.jog_scope_position(0, 0, val)
+            grbl_control.jog_step(0, 0, val)
         
-        res = f"XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos}"
+        res = f"XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG:{ sensors.get_range() } TMP: {sensors.get_temp()}"
     else:
         res = "could not set!"
 
@@ -153,6 +160,30 @@ def save_image():
     else:
         res = "could not save!"
 
+    print(res)
+    return res
+
+
+# Save a series of image files (panorama) along the X axis to the server
+@APP.route('/save_image_panorma', methods=['POST'])
+def save_image_panorma():
+
+    x_pos = grbl_control.xPos
+    y_pos = grbl_control.yPos
+    z_pos = grbl_control.zPos        
+    
+    # Move to start point
+    x_pos = 2
+    grbl_control.jog_to_pos(x_pos, y_pos, z_pos)
+    time.sleep(3)
+
+    while x_pos <= 10:
+        grbl_control.jog_to_pos(x_pos, y_pos, z_pos)
+        time.sleep(1)
+        print("Snap!!")
+        x_pos += 0.5
+    
+    res = f"Panorma Done! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos}"
     print(res)
     return res
 
@@ -404,9 +435,10 @@ print(f"G-Scope device id is: {scopeDeviceId}")
 # Connect to the scope...
 init_scope()
 
-# Connect to GRBL Positioning Controller
+# Connect to GRBL Positioning Controller and sensors
 if (UVC_SETTINGS["robo_scope_mode"]):
-    grbl_control = GrblControl(UVC_SETTINGS["grbl_controller_address"], UVC_SETTINGS["default_step_size"])
+    grbl_control = GrblControl(UVC_SETTINGS["grbl_controller_address"], UVC_SETTINGS["default_step_size"], UVC_SETTINGS["default_feed_rate"])
+    sensors = SensorsFeed()
 else:
     print("*** Roboscope Mode Disabled ***")
 

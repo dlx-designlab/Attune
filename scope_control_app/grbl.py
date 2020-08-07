@@ -3,13 +3,14 @@ import time
 
 class GrblControl:
 
-    def __init__(self, dev_addr, def_step_size):
+    def __init__(self, dev_addr, def_step_size, def_feed_rate):
         
         self.xPos = 0
         self.yPos = 0
         self.zPos = 0
         self.focus = 0
         self.stepSize = def_step_size
+        self.feedRate = def_feed_rate
         self.x_center_pos = 9  # the X - position at which the scope is in the middle of the finger
         self.min_tof_dist = 27  # min distance in mm between the TOF sensor and the user finger
         
@@ -34,20 +35,20 @@ class GrblControl:
         return(grbl_out_string)
 
 
-    def adjust_step_size(self, step):
-        self.stepSize = step
-        self.stepSize = round(self.stepSize, 1)
+    # def adjust_step_size(self, step):
+    #     self.stepSize = step
+    #     self.stepSize = round(self.stepSize, 1)
 
 
-    # Move the Scope to new position
+    # Move the Scope to new position by one step
     # Dist is +1 or -1 to determine direction
     # The scope will be moved by one step
-    def jog_scope_position(self, x_dist, y_dist, z_dist):
+    def jog_step(self, x_dist, y_dist, z_dist):
         self.xPos = round(self.xPos + self.stepSize * x_dist, 1)
         self.yPos = round(self.yPos + self.stepSize * y_dist, 1)
         self.zPos = round(self.zPos + self.stepSize * z_dist, 1)
 
-        the_cmd = f'$J=X{self.xPos} Y{self.yPos} Z{self.zPos} F1000'
+        the_cmd = f'$J=X{self.xPos} Y{self.yPos} Z{self.zPos} F{self.feedRate}'
         jog_result = self.send_grbl_cmd(the_cmd)
         
         # Cehck if jog was successful
@@ -58,6 +59,19 @@ class GrblControl:
             self.yPos = round(self.yPos - self.stepSize * y_dist, 1)
             self.zPos = round(self.zPos - self.stepSize * z_dist, 1)
 
+    # Jog the Scope to a spcific position
+    def jog_to_pos(self, x_pos, y_pos, z_pos):
+
+        the_cmd = f'$J=X{x_pos} Y{y_pos} Z{z_pos} F{self.feedRate}'
+        jog_result = self.send_grbl_cmd(the_cmd)
+        
+        # Cehck if jog was successful
+        if "error" in jog_result:
+            print("jog out of bounds")
+        else:
+            self.xPos = x_pos
+            self.yPos = y_pos
+            self.zPos = z_pos
 
 
     def run_home_cycle(self):
