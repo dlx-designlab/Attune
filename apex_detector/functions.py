@@ -3,8 +3,8 @@ import imutils
 import numpy as np
 
 def sliding_window(image, stepSize, windowSize):
-	""" Sliding a window across an input image"""
-    
+    """ Sliding a window across an input image"""
+
     # slide a window across the image
     for y in range(0, image.shape[0], stepSize):
         for x in range(0, image.shape[1], stepSize):
