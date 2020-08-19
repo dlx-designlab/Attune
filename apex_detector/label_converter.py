@@ -1,4 +1,4 @@
-""" Capilary Apex cropper from labeled images """
+""" Converting labeles from Label-Me format to YOLO format  """
 # import numpy as np
 import cv2
 import json

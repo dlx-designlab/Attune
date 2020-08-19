@@ -1,4 +1,4 @@
-""" Capilary Apex Classifier Test"""
+""" Capilary Apex Detector/ Classifier Test """
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import svm
 from sklearn.model_selection import train_test_split
@@ -27,7 +27,10 @@ print("[INFO] extracting features...")
 data = []
 labels = []
 
+
 def enhance_green(img):
+    """ This function prepares the image for analysis """
+
     # remove noise
     img = cv2.medianBlur(img, nr_level)
     # split RGB channels
@@ -43,29 +46,26 @@ def enhance_green(img):
 
 
 # loop over the image paths in the training set
-# for imagePath in paths.list_images(args["training"]):
 print("Loading training data")
 for imagePath in paths.list_images("data/training/"):
     # extract the tag
     tag = imagePath.split("/")[-2]
 
-    # load the image, convert it to grayscale, and detect edges
+    # load the image
     image = cv2.imread(imagePath)
-  
+ 
     # image = cv2.resize(image, (30, 30), interpolation=cv2.INTER_CUBIC) #0.93288
     # image = cv2.resize(image, (30, 30), interpolation=cv2.INTER_AREA) #0.9401
     # image = cv2.resize(image, (30, 30), interpolation=cv2.INTER_LANCZOS4) #0.9306
     # image = cv2.resize(image, (30, 30), interpolation=cv2.INTER_NEAREST) #0.9390
     # image = cv2.resize(image, (30, 30), interpolation=cv2.INTER_LINEAR) #0.0.9373
 
-
     # Check image Size is correct and fix
     if image.shape[0] < sample_size or image.shape[1] < sample_size:
         print(f"resizing: {imagePath} original size: {image.shape} to {sample_size} x {sample_size}")
         image = cv2.resize(image, (sample_size, sample_size), interpolation=cv2.INTER_CUBIC)
 
-    # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    # gray = cv2.medianBlur(gray, 5)
+    # prepre the image for analysis remove noise, extract gren channel, etc...
     gray = enhance_green(image)
 
     # extract Histogram of Oriented Gradients from the image
@@ -75,6 +75,7 @@ for imagePath in paths.list_images("data/training/"):
                     cells_per_block=(3, 3),
                     transform_sqrt=True,
                     block_norm="L1")
+    
     # update the data and labels
     data.append(H)
     labels.append(tag)
@@ -82,6 +83,10 @@ for imagePath in paths.list_images("data/training/"):
 print("Data Loaded!")
 print(f"Samples: {len(data)}")
 print(f"Labels: {len(labels)}")
+
+
+
+# --- An evaluation of the dataset and prediction accuracy, used to quickly test parameters ---
 
 # # DATASET TESTER:
 # n_estimators = [1, 2, 4, 8, 16, 32, 64, 100]
@@ -107,23 +112,21 @@ test_score = accuracy_score(y_test, test_pred)
 
 print(f"train score: {train_score}, test score: {test_score}")
 
-#####
-
 # for estimator in n_estimators:
-    
+
 #     print("[INFO] Training classifier...")
-    
+
 #     # "train" the Random Forest classifier
 #     rf = RandomForestClassifier(n_estimators=estimator, random_state=42)
 #     rf.fit(x_train, y_train)
-    
+
 #     print("[INFO] Predicting...")
 #     train_pred = rf.predict(x_train)
 #     test_pred = rf.predict(x_test)
-    
+
 #     train_score = accuracy_score(y_train, train_pred)
 #     test_score = accuracy_score(y_test, test_pred)
-    
+
 #     train_results.append(train_score)
 #     test_results.append(test_score)
 
@@ -137,9 +140,9 @@ print(f"train score: {train_score}, test score: {test_score}")
 # plt.xlabel("n_estimators")
 # plt.show()
 
-# ###############################
+# --- end of evaluation and test ---
 
-# "train" the Random Forest classifier
+# "Train" the SVM / Random-Forest classifier
 print("[INFO] Training classifier...")
 # model = RandomForestClassifier(n_estimators=36, random_state=42)
 model = svm.LinearSVC(max_iter=10, random_state=42)
@@ -147,19 +150,16 @@ model.fit(data, labels)
 
 print("[INFO] Evaluating...")
 
-# Measure exection time
+# Measure execution time
 start_time = time.time()
 
 # Load test image
 test_img = cv2.imread("data/test/full_frame/cap00074.jpg")
 # test_img = cv2.resize(test_img, (640, 360), interpolation=cv2.INTER_AREA)
 test_gray = enhance_green(test_img)
-# test_gray = cv2.cvtColor(test_img, cv2.COLOR_BGR2GRAY)
 
 # crop top half of the test img
 test_gray = test_gray[0:360, 0:1280]
-
-
 
 # create an array of detected objects
 # detected_objects = np.array([(0, 0, 60, 60)])
@@ -172,7 +172,7 @@ for (x, y, window) in functions.sliding_window(test_gray,
     # if the window does not meet our desired window size, ignore it
     if window.shape[0] != winH or window.shape[1] != winW:
         continue
-  
+
     # print(f"Window: {x}, {y}")
 
     # Test if the sample has enough gragients for analysis
@@ -180,7 +180,7 @@ for (x, y, window) in functions.sliding_window(test_gray,
     lap_abs = cv2.convertScaleAbs(laplacian)
     lap_abs_sum = np.sum(lap_abs)
 
-    # if we have enough gradients, apply classifier and predict content 
+    # if we have enough gradients, apply classifier and predict content
     if lap_abs_sum > laplacian_threshold:
         # Apply Classifier: Extract HOG from the window and predict
         # s_time = time.time()
@@ -208,8 +208,8 @@ for (x, y, window) in functions.sliding_window(test_gray,
             # detected_objects = np.append(detected_objects, [(x, y, x + winW, y + winH)], axis=0)
 
 
-# convert detected objects to NumPy Arra and preform Non-Maximum Suppression
-# s_time = time.time()  
+# convert detected objects to NumPy Array and preform "Non-Maximum Suppression" to remove redundant detections
+# s_time = time.time()
 detected_objects_array = np.array(detected_objects)
 refined_detector = functions.non_max_suppression_fast(detected_objects_array, box_overlap_thresh)
 # print(f"Refining results took: {time.time() - s_time} sec")
@@ -232,7 +232,7 @@ for box in refined_detector:
 cv2.imshow("RESULT!", clone_img)
 cv2.waitKey(0)
 
-########################
+######### older tests ###############
 # cv2.waitKey(1)
 
 # Create an large image placeholder for the results

@@ -60,7 +60,6 @@ for imagePath in paths.list_images(data_path):
 
 # cv2.waitKey(0)
 
-
     # # extract Histogram of Oriented Gradients from the image
     # H = feature.hog(gray,
     #                 orientations=9,

@@ -1,9 +1,11 @@
-""" Helper Functions fot eh Capilary Apex Classifier """
+""" Helper Functions for the Capilary Apex Classifier Script """
 import imutils
 import numpy as np
 
 def sliding_window(image, stepSize, windowSize):
-	# slide a window across the image
+	""" Sliding a window across an input image"""
+    
+    # slide a window across the image
     for y in range(0, image.shape[0], stepSize):
         for x in range(0, image.shape[1], stepSize):
             # yield the current window
@@ -11,6 +13,8 @@ def sliding_window(image, stepSize, windowSize):
 
 
 def non_max_suppression_fast(boxes, overlapThresh):
+    """ Merges overlapping detection boxes """
+
     # if there are no boxes, return an empty list
     if len(boxes) == 0:
         return []
