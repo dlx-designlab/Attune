@@ -21,6 +21,7 @@ sl_win_step = 20
 box_overlap_thresh = 0.3
 nr_level = 5
 laplacian_threshold = 110000
+overexposure_threshold = 245
 
 # initialize the data matrix and labels
 print("[INFO] extracting features...")
@@ -179,6 +180,10 @@ for (x, y, window) in functions.sliding_window(test_gray,
     laplacian = cv2.Laplacian(window, cv2.CV_64F, ksize=5)
     lap_abs = cv2.convertScaleAbs(laplacian)
     lap_abs_sum = np.sum(lap_abs)
+
+    # If any of the pixels are overexposed skip the entire window as glare is present
+    if (np.count_nonzero(window > overexposure_threshold)):
+        continue
 
     # if we have enough gradients, apply classifier and predict content
     if lap_abs_sum > laplacian_threshold:
