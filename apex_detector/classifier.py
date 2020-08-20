@@ -177,14 +177,14 @@ for (x, y, window) in functions.sliding_window(test_gray,
 
     # print(f"Window: {x}, {y}")
 
+    # If too many of the pixels are overexposed skip the entire window as glare is present
+    if (np.count_nonzero(window > overexposure_threshold) > overexposure_count_threshold):
+        continue
+
     # Test if the sample has enough gragients for analysis
     laplacian = cv2.Laplacian(window, cv2.CV_64F, ksize=5)
     lap_abs = cv2.convertScaleAbs(laplacian)
     lap_abs_sum = np.sum(lap_abs)
-
-    # If too many of the pixels are overexposed skip the entire window as glare is present
-    if (np.count_nonzero(window > overexposure_threshold) > overexposure_count_threshold):
-        continue
 
     # if we have enough gradients, apply classifier and predict content
     if lap_abs_sum > laplacian_threshold:
