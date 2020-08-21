@@ -176,14 +176,23 @@ def save_image_panorma():
     x_pos = 2
     grbl_control.jog_to_pos(x_pos, y_pos, z_pos)
     time.sleep(3)
+    if isCapturing:
+        while x_pos <= 10:
+            grbl_control.jog_to_pos(x_pos, y_pos, z_pos)
+            # time.sleep(1)
+        
+            filename = make_file_name(request.get_json(), "png", file_num=x_pos)
+            print(f"saving img file: {filename}")
+            with lock:
+                cv2.imwrite(filename, outputFrame.bgr)
+                res = "file saved!"
 
-    while x_pos <= 10:
-        grbl_control.jog_to_pos(x_pos, y_pos, z_pos)
-        time.sleep(1)
-        print("Snap!!")
-        x_pos += 0.5
-    
-    res = f"Panorma Done! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos}"
+            x_pos += 0.5
+        
+        res = f"Panorma Done! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos}"
+    else:
+        res = "could not save!"
+
     print(res)
     return res
 
@@ -253,7 +262,7 @@ def download_gallery():
         return str(exception)
 
 
-def make_file_name(req_data, file_ext):
+def make_file_name(req_data, file_ext, file_num = None):
     global FOCUS, controls_dict
 
     # get User Id from cookie
@@ -278,8 +287,11 @@ def make_file_name(req_data, file_ext):
         foc = f"0{FOCUS}"
     elif FOCUS < 10:
         foc = f"00{FOCUS}"
-
-    file_name = f"static/captured_pics/{uid}/cap_{uid}_{date_string}_f{foc}.{file_ext}"
+    
+    if file_num == None:
+        file_num = 0
+    
+    file_name = f"static/captured_pics/{uid}/cap_{uid}_{date_string}_f{foc}_n{file_num}.{file_ext}"
 
     return file_name
 
