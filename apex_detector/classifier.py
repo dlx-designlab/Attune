@@ -161,7 +161,7 @@ test_img = cv2.imread("data/test/full_frame/cap00074.jpg")
 test_gray = enhance_green(test_img)
 
 # crop top half of the test img
-test_gray = test_gray[0:360, 0:1280]
+# test_gray = test_gray[0:360, 0:1280]
 
 # create an array of detected objects
 # detected_objects = np.array([(0, 0, 60, 60)])
