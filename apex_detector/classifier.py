@@ -178,7 +178,7 @@ for (x, y, window) in functions.sliding_window(test_gray,
     # print(f"Window: {x}, {y}")
 
     # If too many of the pixels are overexposed skip the entire window as glare is present
-    if (np.count_nonzero(window > overexposure_threshold) > overexposure_count_threshold):
+    if (np.count_nonzero(window > overexposure_threshold) > overexposure_count_threshold * sample_size ** 2):
         continue
 
     # Test if the sample has enough gragients for analysis
