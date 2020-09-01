@@ -11,7 +11,7 @@ class GrblControl:
         self.focus = 0
         self.stepSize = def_step_size
         self.feedRate = def_feed_rate
-        self.x_center_pos = 9  # the X - position at which the scope is in the middle of the finger
+        self.x_center_pos = 6  # the X - position at which the scope is in the middle of the finger
         self.min_tof_dist = 27  # min distance in mm between the TOF sensor and the user finger
         
         # Open serial port to communicate with GRBL

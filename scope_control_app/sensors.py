@@ -32,23 +32,4 @@ class SensorsFeed:
         sensorVal = self.rng_sensor.range
         return sensorVal
 
-
-# sns = SensorsFeed()
-# while True:
-#     print("----------------")
-#     print(sns.get_temp())
-#     print(sns.get_range())
-#     print("----------------")
-#     time.sleep(1)
-
-# while not i2c.try_lock():
-#     pass
-
-# # Find the first I2C device available.
-# devices = i2c.scan()
-# while len(devices) < 1:
-#     devices = i2c.scan()
-#     print(devices)
-#     time.sleep(1)
-
-# print(devices)
+        

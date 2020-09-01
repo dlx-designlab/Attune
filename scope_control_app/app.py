@@ -19,6 +19,7 @@ import uvc  # >> https://github.com/pupil-labs/pyuvc
 from grbl import GrblControl
 # Sensors feed class
 from sensors import SensorsFeed
+from cap_detector import CapDetector
 
 # Flask web app framework
 from flask import (Flask, Response, jsonify, make_response, redirect,
@@ -43,6 +44,10 @@ UVC_SETTINGS = None
 # In Seconds, How often to reset the G-Scope to avoid crashing (PYUVC clock correction workaround)
 SCOPE_RESET_FREQ = 90
 SCOPE_RESET_REQUIRED = False
+# Panorama dementions in mm - Width, Height, step size
+PANORAMA_SIZE =  {"width": 4, "height": 2, "step": 0.5}
+
+DETECTOR = CapDetector()
 
 
 @APP.route("/")
@@ -107,6 +112,10 @@ def set_ctrl():
             res = f"Absolute Focus: {FOCUS}"
             # print(controls_dict['Absolute Focus'].value)
             # print(FOCUS)
+        elif ctrl == 'Auto Focus':
+            print("AUTOFOCUSING!")
+            auto_focus()
+            res = "Auto Focused!"
         else:
             controls_dict[ctrl].value = val
             res = f"{ctrl}: {val}"
@@ -143,6 +152,38 @@ def parse_grbl_cmd():
 
     return res
 
+@APP.route('/find_caps', methods=['POST'])
+def find_capillaries():
+    global FOCUS, DETECTOR, outputFrame, controls_dict
+    
+    if request.method == 'POST' and request.is_json:
+        req_data = request.get_json()
+        val = int(req_data['value'])
+        grbl_control.stepSize = 0.2
+
+        print("Focusing...")
+        auto_focus()
+        
+        # print("Adjusting Z Height...")
+        
+        print("Looking for oil...")
+        while not DETECTOR.check_oil(outputFrame):
+            grbl_control.jog_step(0, 1, 0)
+
+        grbl_control.jog_step(0, 10, 0)
+        time.sleep(0.5)
+
+        print("Looking for caps...")
+        while not DETECTOR.check_caps(outputFrame):
+            grbl_control.jog_step(0, 1, 0)
+            time.sleep(0.1)
+
+        res = f"Detected! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG:{ sensors.get_range() } TMP: {sensors.get_temp()}"
+    else:
+        res = "could not find caps!"
+
+    return res
+
 
 # Save an image file to the server
 @APP.route('/save_image', methods=['POST'])
@@ -164,35 +205,47 @@ def save_image():
     return res
 
 
-# Save a series of image files (panorama) along the X axis to the server
+# Save a series of image files (panorama) along the X axis
+# The staring point of the panorama should be the center of the interest area
 @APP.route('/save_image_panorma', methods=['POST'])
 def save_image_panorma():
+
+    global PANORAMA_SIZE    
+    print(f"Capturing Panorama: {PANORAMA_SIZE}")
+
+    # Move to start point - the top right corner of the panorama
+    # Half the width and height away from the current position
+    start_x = int(grbl_control.xPos - PANORAMA_SIZE["width"] / 2)
+    start_y = grbl_control.yPos
+    start_z = grbl_control.zPos
+    
+    grbl_control.jog_to_pos(start_x, start_y, start_z)
+    time.sleep(1)
 
     x_pos = grbl_control.xPos
     y_pos = grbl_control.yPos
     z_pos = grbl_control.zPos        
     
-    # Move to start point
-    x_pos = 2
-    grbl_control.jog_to_pos(x_pos, y_pos, z_pos)
-    time.sleep(3)
+    start_time = time.time()
+    
     if isCapturing:
-        while x_pos <= 10:
-            grbl_control.jog_to_pos(x_pos, y_pos, z_pos)
-            # time.sleep(1)
-        
-            filename = make_file_name(request.get_json(), "png", file_num=x_pos)
+        while x_pos <= start_x + PANORAMA_SIZE["width"]:            
+            # take a picture
+            filename = make_file_name(request.get_json(), "png", pan_pos=f"{int(x_pos*10)}x{int(y_pos*10)}")
             print(f"saving img file: {filename}")
             with lock:
                 cv2.imwrite(filename, outputFrame.bgr)
                 res = "file saved!"
-
-            x_pos += 0.5
+            
+            x_pos += PANORAMA_SIZE["step"]
+            grbl_control.jog_to_pos(x_pos, y_pos, z_pos)
+            
         
         res = f"Panorma Done! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos}"
     else:
         res = "could not save!"
 
+    print(f"Took: {time.time() - start_time} sec.")
     print(res)
     return res
 
@@ -262,7 +315,7 @@ def download_gallery():
         return str(exception)
 
 
-def make_file_name(req_data, file_ext, file_num = None):
+def make_file_name(req_data, file_ext, pan_pos = "0"):
     global FOCUS, controls_dict
 
     # get User Id from cookie
@@ -288,13 +341,43 @@ def make_file_name(req_data, file_ext, file_num = None):
     elif FOCUS < 10:
         foc = f"00{FOCUS}"
     
-    if file_num == None:
-        file_num = 0
-    
-    file_name = f"static/captured_pics/{uid}/cap_{uid}_{date_string}_f{foc}_n{file_num}.{file_ext}"
+    file_name = f"static/captured_pics/{uid}/cap_{uid}_{date_string}_f{foc}_pan{pan_pos}.{file_ext}"
 
     return file_name
 
+def auto_focus():
+    # Auto Focus the scope using OpenCV
+    global FOCUS, DETECTOR, outputFrame, controls_dict
+
+    MIN_FOCUS = 5
+    MAX_FOCUS = 90
+    
+    # FOCUS = get_current_focus(FOCUS)
+    # res = f"Absolute Focus: {FOCUS}"
+
+    controls_dict['Auto Focus'].value = 0
+
+    max_focus_score = 0
+    optimal_focus = MAX_FOCUS
+
+    for man_focus in range(MIN_FOCUS, MAX_FOCUS, 2):
+        
+        controls_dict['Absolute Focus'].value = man_focus
+        # time.sleep(0.01)
+        focus_score = DETECTOR.check_focus(outputFrame)
+
+        if focus_score > max_focus_score:
+            max_focus_score = focus_score
+            optimal_focus = man_focus
+        
+        print(man_focus)
+
+    controls_dict['Absolute Focus'].value = optimal_focus
+    time.sleep(1)
+
+    FOCUS = get_current_focus(FOCUS)
+    print(f"opt f: {optimal_focus}")
+    print(f"cur f: {FOCUS}")
 
 
 # Captures frames in the background (in a separate thread)
@@ -419,6 +502,8 @@ def init_scope():
     # controls_dict['Absolute Focus'].value = FOCUS
 
 
+# ***** STARTUP CODE *****
+
 # commandline argument parser
 # ap = argparse.ArgumentParser()
 # ap.add_argument("-i", "--ip", type=str, required=True, help="ip address of the device")
@@ -434,6 +519,7 @@ with open('scope_settings.json', 'r') as f:
     STREAM_FPS = UVC_SETTINGS["stream_fps"]
     SCOPE_RESET_FREQ = UVC_SETTINGS["scope_reset_freq"]
     FOCUS = UVC_SETTINGS["Absolute Focus"]
+    PANORAMA_SIZE = UVC_SETTINGS["panorama_size"]
 
 # Find the G-Scope device number within all attached devices.
 dev_list = uvc.device_list()
@@ -464,7 +550,6 @@ CAPTURE_THREAD.start()
 # keypress_thread.daemon = True
 # keypress_thread.start()
 # print("Press the S key to Start/Stop Capturing")
-
 
 if __name__ == '__main__':
     # start the flask app

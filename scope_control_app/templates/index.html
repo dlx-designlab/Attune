@@ -62,7 +62,7 @@
         <table>
             <tr>
                 <td><button class="fas fa-home fa-sm" onclick="send_grbl_command('H', 0)"></button></td>
-                <td><button class="fas fa-skull fa-sm" onclick=""></button></td>
+                <td><button class="fas fa-hand-point-up fa-sm" onclick="home_on_caps(0)"></button></td>
                 <td></td>
                 <td>
                     <!-- <label for="stepSizeSelector" class="step-size-label">Step Size</label> -->
@@ -330,6 +330,19 @@
         }
     });
 
+
+    function update_step_size(){
+        var step = document.getElementById("stepSizeSelector").value;
+        send_grbl_command("STP", step)
+    }
+
+
+    function update_feed_rate(){
+        var feed = document.getElementById("feedRateSelector").value
+        send_grbl_command("FDR", feed)
+    }
+
+
     function send_grbl_command(cmd, val){
       console.log('Sending ' + cmd + ' ' + val);
       $.ajax({
@@ -344,19 +357,23 @@
                 document.getElementById("status").innerHTML = "ERROR!";
           }
       });
-
-
     };
 
-    function update_step_size(){
-        var step = document.getElementById("stepSizeSelector").value;
-        send_grbl_command("STP", step)
-    }
-
-    function update_feed_rate(){
-        var feed = document.getElementById("feedRateSelector").value
-        send_grbl_command("FDR", feed)
-    }
+    function home_on_caps(val){
+      console.log('Looking for Capillaries');
+      $.ajax({
+          type: 'POST',
+          url: "/find_caps",
+          contentType: 'application/json;charset=UTF-8',
+          data: JSON.stringify({'value': val}),
+          success: function(result) {
+                document.getElementById("status").innerHTML = result;
+          },
+          error: function(result) {
+                document.getElementById("status").innerHTML = "ERROR!";
+          }
+      });
+    };
 
     // Capture Scope image
     function capture_scope_feed(capture_path){
@@ -424,10 +441,12 @@
       leftBtnsPanel.style.display="none";
     }
 
+
     motionCtlBtn.onclick = function() {
       motionCtlPopup.style.display = "block";
       leftBtnsPanel.style.display="none";
     }
+
 
     closePanelButtons.forEach(item => {
         item.onclick = function() {
