@@ -23,6 +23,7 @@ nr_level = 5
 laplacian_threshold = 110000
 overexposure_threshold = 245
 overexposure_count_threshold = 0
+threshold_count_threshold = 0.8
 
 # initialize the data matrix and labels
 print("[INFO] extracting features...")
@@ -159,6 +160,9 @@ start_time = time.time()
 test_img = cv2.imread("data/test/full_frame/cap00074.jpg")
 # test_img = cv2.resize(test_img, (640, 360), interpolation=cv2.INTER_AREA)
 test_gray = enhance_green(test_img)
+threshold_image = cv2.adaptiveThreshold(cv2.medianBlur(test_gray, 11),
+										255, cv2.ADAPTIVE_THRESH_MEAN_C,
+										cv2.THRESH_BINARY, 51, 5)
 
 # crop top half of the test img
 # test_gray = test_gray[0:360, 0:1280]
@@ -176,6 +180,10 @@ for (x, y, window) in functions.sliding_window(test_gray,
         continue
 
     # print(f"Window: {x}, {y}")
+
+    threshold_window = threshold_image[y: y+winH, x: x+winW]
+    if (np.count_nonzero(threshold_window) >  threshold_count_threshold * sample_size ** 2):
+        continue
 
     # If too many of the pixels are overexposed skip the entire window as glare is present
     if (np.count_nonzero(window > overexposure_threshold) > overexposure_count_threshold * sample_size ** 2):
