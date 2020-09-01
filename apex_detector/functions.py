@@ -1,6 +1,19 @@
 """ Helper Functions for the Capilary Apex Classifier Script """
 import imutils
 import numpy as np
+import cv2
+
+nr_level = 5
+
+def enhance_green(img):
+    """ This function prepares the image for analysis """
+
+    # remove noise
+    img = cv2.medianBlur(img, nr_level)
+    # split RGB channels
+    img_blue_c1, img_green_c1, img_red_c1 = cv2.split(img)
+
+    return img_green_c1
 
 def sliding_window(image, stepSize, windowSize):
     """ Sliding a window across an input image"""
