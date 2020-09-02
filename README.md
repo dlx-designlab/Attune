@@ -1,4 +1,8 @@
 # Project Attune Hardware
 
-This Branch containg all hardware related files.
+This branch contains all hardware related files.
+- CAD Models
+- Drawings
+- Electronics
+- Assembly animations and renderings
 For assembly instructions see the [WiKi](https://github.com/dlx-designlab/Attune/wiki/Scan-Sations)
