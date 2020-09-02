@@ -25,7 +25,8 @@ class CapDetector:
         self.laplacian_threshold = 110000
         self.overexposure_threshold = 245
         self.overexposure_count_threshold = 0
-        self.threshold_count_threshold = 0.8
+        self.threshold_count_threshold = 0.82
+        self.pred_conf_threshold = -50
 
         print("Detector Ready!")
 
@@ -68,8 +69,8 @@ class CapDetector:
     def check_caps(self, frame):
         test_gray = self.enhance_green(frame)
         threshold_image = cv2.adaptiveThreshold(cv2.medianBlur(test_gray, 11),
-								        		255, cv2.ADAPTIVE_THRESH_MEAN_C,
-								        		cv2.THRESH_BINARY, 51, 5)
+                                                255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                                                cv2.THRESH_BINARY, 51, 5)
         
         detected_objects = []
         (winW, winH) = (self.sample_size, self.sample_size) 
@@ -108,10 +109,10 @@ class CapDetector:
                             transform_sqrt=True,
                             block_norm="L1")
 
-            pred_conf = int(self.model.decision_function(H.reshape(1, -1))[0] * 100)
+            pred_conf = -int(self.model.decision_function(H.reshape(1, -1))[0] * 100)
 
-            if pred_conf < 0:
-                detected_objects.append([x, y, x + winW, y + winH, abs(pred_conf)])
+            if pred_conf > self.pred_conf_threshold:
+                detected_objects.append([x, y, x + winW, y + winH, pred_conf])
 
 
         # convert detected objects to NumPy Array and preform "Non-Maximum Suppression" to remove redundant detections
