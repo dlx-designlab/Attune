@@ -1,10 +1,6 @@
 """ Capilary Apex Detector Test """
 import time
-from skimage import feature
 import cv2
-import numpy as np
-import functions
-import pickle
 from cap_detector import CapDetector
 
 cap_detector = CapDetector()
