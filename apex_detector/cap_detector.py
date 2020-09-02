@@ -25,8 +25,8 @@ class CapDetector:
         self.laplacian_threshold = 110000
         self.overexposure_threshold = 245
         self.overexposure_count_threshold = 0
-        self.threshold_count_threshold = 0.82
-        self.pred_conf_threshold = -50
+        self.threshold_count_threshold = 0.9
+        self.pred_conf_threshold = 0
 
         print("Detector Ready!")
 
