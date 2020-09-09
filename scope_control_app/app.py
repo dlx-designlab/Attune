@@ -1,5 +1,6 @@
 """ The Main Module of the cope control APP """
 import json
+import math
 import logging
 import threading
 import time
@@ -46,6 +47,7 @@ SCOPE_RESET_FREQ = 90
 SCOPE_RESET_REQUIRED = False
 # Panorama dementions in mm - Width, Height, step size
 PANORAMA_SIZE =  {"width": 4, "height": 2, "step": 0.5}
+FINGER_HOME_POS =  {"x_pos": 6, "y_pos": 4, "scope_min_dist": 20}
 
 DETECTOR = CapDetector()
 
@@ -154,33 +156,52 @@ def parse_grbl_cmd():
 
 @APP.route('/find_caps', methods=['POST'])
 def find_capillaries():
-    global FOCUS, DETECTOR, outputFrame, controls_dict
+    global FOCUS, DETECTOR, FINGER_HOME_POS, outputFrame, controls_dict
     
     if request.method == 'POST' and request.is_json:
         req_data = request.get_json()
         val = int(req_data['value'])
         grbl_control.stepSize = 0.2
+        range_measure_z_pos = 1
 
-        print("Focusing...")
-        auto_focus()
+        # Move scope to a rough, pre-scan starting position
+        grbl_control.jog_to_pos(FINGER_HOME_POS["x_pos"], FINGER_HOME_POS["y_pos"], range_measure_z_pos)
+        time.sleep(1)
+        # Check finger size and move scope down to pre-scan distance
+        range_log = []
+        while len(range_log) < 50:
+            range_log.append(sensors.get_range())
+            time.sleep(0.01)
         
-        # print("Adjusting Z Height...")
+        ave_rng = sum(range_log) / len(range_log)
+        new_z_pos = math.floor(ave_rng - FINGER_HOME_POS["scope_min_dist"] + range_measure_z_pos)
         
-        print("Looking for oil...")
-        while not DETECTOR.check_oil(outputFrame):
-            grbl_control.jog_step(0, 1, 0)
+        # print(range_log)
+        print(f"Averahge Range: {ave_rng} Adjusting height to: {new_z_pos}")
+        
+        grbl_control.jog_to_pos(FINGER_HOME_POS["x_pos"], FINGER_HOME_POS["y_pos"], new_z_pos)
 
-        grbl_control.jog_step(0, 10, 0)
-        time.sleep(0.5)
+        # print("Focusing...")
+        # auto_focus()
+        
+        # # print("Adjusting Z Height...")        
+        # print("Looking for oil...")
+        # while not DETECTOR.check_oil(outputFrame):
+        #     grbl_control.jog_step(0, 1, 0)
 
-        print("Looking for caps...")
-        while not DETECTOR.check_caps(outputFrame):
-            grbl_control.jog_step(0, 1, 0)
-            time.sleep(0.1)
+        # grbl_control.jog_step(0, 10, 0)
+        # time.sleep(0.5)
 
-        res = f"Detected! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG:{ sensors.get_range() } TMP: {sensors.get_temp()}"
+        # print("Looking for caps...")
+        # while not DETECTOR.check_caps(outputFrame):
+        #     grbl_control.jog_step(0, 1, 0)
+        #     time.sleep(0.1)
+        
+        res = f"Finger Home! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos}"
+        # res = f"Detected! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG:{ sensors.get_range() } TMP: {sensors.get_temp()}"
     else:
-        res = "could not find caps!"
+        res = "could not home finger"
+        # res = "could not find caps!"
 
     return res
 
@@ -207,7 +228,7 @@ def save_image():
 
 # Save a series of image files (panorama) along the X axis
 # The staring point of the panorama should be the center of the interest area
-@APP.route('/save_image_panorma', methods=['POST'])
+@APP.route('/save_image_panorama', methods=['POST'])
 def save_image_panorma():
 
     global PANORAMA_SIZE    
@@ -403,6 +424,7 @@ def capture_frame():
             time.sleep(0.5)
 
 
+# Generate a video feed to send to the frontend
 def generate():
     # grab global references to the output frame and lock variables
     global SCOPE_RESET_REQUIRED, outputFrame, lock, isCapturing
@@ -502,7 +524,7 @@ def init_scope():
     # controls_dict['Absolute Focus'].value = FOCUS
 
 
-# ***** STARTUP CODE *****
+# ***** STARTUP PROCEDURE *****
 
 # commandline argument parser
 # ap = argparse.ArgumentParser()
@@ -520,6 +542,7 @@ with open('scope_settings.json', 'r') as f:
     SCOPE_RESET_FREQ = UVC_SETTINGS["scope_reset_freq"]
     FOCUS = UVC_SETTINGS["Absolute Focus"]
     PANORAMA_SIZE = UVC_SETTINGS["panorama_size"]
+    FINGER_HOME_POS = UVC_SETTINGS["fnger_home_pos"]
 
 # Find the G-Scope device number within all attached devices.
 dev_list = uvc.device_list()
@@ -536,6 +559,7 @@ init_scope()
 # Connect to GRBL Positioning Controller and sensors
 if (UVC_SETTINGS["robo_scope_mode"]):
     grbl_control = GrblControl(UVC_SETTINGS["grbl_controller_address"], UVC_SETTINGS["default_step_size"], UVC_SETTINGS["default_feed_rate"])
+    grbl_control.run_home_cycle()
     sensors = SensorsFeed()
 else:
     print("*** Roboscope Mode Disabled ***")
