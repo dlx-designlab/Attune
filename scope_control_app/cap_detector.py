@@ -17,15 +17,15 @@ class CapDetector:
         self.focus_kernel = np.real(gabor_kernel(0.4, theta=0, sigma_x=3, sigma_y=3))
         self.oil_threshold = 0.8
         self.status = 0
-        self.model = pickle.load(open('model', 'rb'))
+        self.model = pickle.load(open('modelthresh', 'rb'))
         self.sample_size = 60
-        self.sl_win_step = 20
+        self.sl_win_step = 40
         self.box_overlap_thresh = 0.3
         self.nr_level = 5
         self.laplacian_threshold = 110000
-        self.overexposure_threshold = 245
+        self.overexposure_threshold = 200
         self.overexposure_count_threshold = 0
-        self.threshold_count_threshold = 0.8
+        self.threshold_count_threshold = 0.9
 
         print("Detector Ready!")
 
@@ -67,6 +67,7 @@ class CapDetector:
 
     def check_caps(self, frame):        
         test_gray = self.enhance_green(frame.bgr)
+
         threshold_image = cv2.adaptiveThreshold(cv2.medianBlur(test_gray, 11),
 								        		255, cv2.ADAPTIVE_THRESH_MEAN_C,
 								        		cv2.THRESH_BINARY, 51, 5)
@@ -89,24 +90,7 @@ class CapDetector:
             if (np.count_nonzero(window > self.overexposure_threshold) > self.overexposure_count_threshold * self.sample_size ** 2):
                 continue
 
-            # Test if the sample has enough gragients for analysis
-            laplacian = cv2.Laplacian(window, cv2.CV_64F, ksize=5)
-            lap_abs = cv2.convertScaleAbs(laplacian)
-            lap_abs_sum = np.sum(lap_abs)
-
-            # only if we have enough gradients, apply classifier and predict content
-            if lap_abs_sum <= self.laplacian_threshold:
-                continue
-
-
-            # Apply Classifier: Extract HOG from the window and predict
-            # s_time = time.time()
-            (H) = feature.hog(window,
-                            orientations=9,
-                            pixels_per_cell=(10, 10),
-                            cells_per_block=(3, 3),
-                            transform_sqrt=True,
-                            block_norm="L1")
+            (H) =  threshold_window.flatten()
 
             pred_conf = int(self.model.decision_function(H.reshape(1, -1))[0] * 100)
 
@@ -118,7 +102,13 @@ class CapDetector:
         detected_objects_array = np.array(detected_objects)
         refined_detector = self.non_max_suppression_fast(detected_objects_array, self.box_overlap_thresh)
 
-        return len(refined_detector) > 2
+        top_count = sum(x[1] < 540 for x in refined_detector)
+        bottom_count = len(refined_detector) - top_count
+
+        print(f"Top    :{top_count}")
+        print(f"Bottom :{bottom_count}")
+
+        return bottom_count - top_count
 
 
     #  HELPER FUNCTIONS

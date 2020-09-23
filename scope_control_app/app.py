@@ -174,7 +174,7 @@ def find_capillaries():
             time.sleep(0.01)
         
         ave_rng = sum(range_log) / len(range_log)
-        new_z_pos = math.floor(ave_rng - FINGER_HOME_POS["scope_min_dist"] + range_measure_z_pos)
+        new_z_pos = 5.8 #math.floor(ave_rng - FINGER_HOME_POS["scope_min_dist"] + range_measure_z_pos)
         
         # print(range_log)
         print(f"Averahge Range: {ave_rng} Adjusting height to: {new_z_pos}")
@@ -192,10 +192,20 @@ def find_capillaries():
         # grbl_control.jog_step(0, 10, 0)
         # time.sleep(0.5)
 
-        # print("Looking for caps...")
-        # while not DETECTOR.check_caps(outputFrame):
-        #     grbl_control.jog_step(0, 1, 0)
-        #     time.sleep(0.1)
+        time.sleep(10)
+
+        print("Looking for caps...")
+
+
+        max_caps = 0
+        max_caps_postition = grbl_control.yPos
+        for _ in range(20):
+            grbl_control.jog_step(0, 1, 0)
+            caps = DETECTOR.check_caps(outputFrame)
+            if caps > max_caps:
+                max_caps = caps
+                max_caps_postition = grbl_control.yPos
+        grbl_control.jog_to_pos(grbl_control.xPos, max_caps_postition, grbl_control.zPos)
         
         res = f"Finger Home! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos}"
         # res = f"Detected! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG:{ sensors.get_range() } TMP: {sensors.get_temp()}"

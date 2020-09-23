@@ -3,9 +3,9 @@ from sensors import SensorsFeed
 import time
 
 # log time in seconds
-log_duration = 3600
+log_duration = 360
 # samples per mesurements (to average)
-rng_samples = 50
+rng_samples = 20
 
 sns = SensorsFeed()
 ave_range_log = []
