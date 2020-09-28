@@ -97,6 +97,10 @@ button:disabled {
     border-radius: 0px 10px 10px 0px;
 }
 
+.settings-panel table{
+    margin-top: 15px;
+}
+
 .settings-panel td{
     text-align: center;
     font-size: 1.2em;
@@ -112,7 +116,11 @@ button:disabled {
     text-align: center;
 }
 
-.step-size-label{
+.input-area{
+    margin: 0px 5px;
+}
+
+.input-label{
     display: block;
     font-size: 0.7em;
 

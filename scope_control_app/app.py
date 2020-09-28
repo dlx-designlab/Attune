@@ -154,15 +154,16 @@ def parse_grbl_cmd():
 
     return res
 
-@APP.route('/find_caps', methods=['POST'])
-def find_capillaries():
+
+@APP.route('/home_finger', methods=['POST'])
+def home_finger():
     global FOCUS, DETECTOR, FINGER_HOME_POS, outputFrame, controls_dict
     
     if request.method == 'POST' and request.is_json:
         req_data = request.get_json()
         val = int(req_data['value'])
         grbl_control.stepSize = 0.2
-        range_measure_z_pos = 1
+        range_measure_z_pos = 1 # from which Z-postion to take range measurement
 
         # Move scope to a rough, pre-scan starting position
         grbl_control.jog_to_pos(FINGER_HOME_POS["x_pos"], FINGER_HOME_POS["y_pos"], range_measure_z_pos)
@@ -174,12 +175,26 @@ def find_capillaries():
             time.sleep(0.01)
         
         ave_rng = sum(range_log) / len(range_log)
-        new_z_pos = 5.8 #math.floor(ave_rng - FINGER_HOME_POS["scope_min_dist"] + range_measure_z_pos)
+        new_z_pos = math.floor(ave_rng - FINGER_HOME_POS["scope_min_dist"])
         
         # print(range_log)
         print(f"Averahge Range: {ave_rng} Adjusting height to: {new_z_pos}")
         
         grbl_control.jog_to_pos(FINGER_HOME_POS["x_pos"], FINGER_HOME_POS["y_pos"], new_z_pos)
+        
+        res = f"Finger Home! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG:{ sensors.get_range() } TMP: {sensors.get_temp()}"
+    
+    else:
+        res = "Could not home finger"
+
+
+@APP.route('/find_caps', methods=['POST'])
+def find_capillaries():
+    global FOCUS, DETECTOR, FINGER_HOME_POS, outputFrame, controls_dict
+    
+    if request.method == 'POST' and request.is_json:
+        req_data = request.get_json()
+        val = int(req_data['value'])
 
         # print("Focusing...")
         # auto_focus()
@@ -191,27 +206,25 @@ def find_capillaries():
 
         # grbl_control.jog_step(0, 10, 0)
         # time.sleep(0.5)
-
-        time.sleep(10)
-
         print("Looking for caps...")
-
-
+        
+        grbl_control.stepSize = 0.2        
         max_caps = 0
         max_caps_postition = grbl_control.yPos
+
         for _ in range(20):
             grbl_control.jog_step(0, 1, 0)
             caps = DETECTOR.check_caps(outputFrame)
             if caps > max_caps:
                 max_caps = caps
                 max_caps_postition = grbl_control.yPos
+        
         grbl_control.jog_to_pos(grbl_control.xPos, max_caps_postition, grbl_control.zPos)
         
-        res = f"Finger Home! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos}"
-        # res = f"Detected! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG:{ sensors.get_range() } TMP: {sensors.get_temp()}"
+        res = f"Detected! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG:{ sensors.get_range() } TMP: {sensors.get_temp()}"
+    
     else:
-        res = "could not home finger"
-        # res = "could not find caps!"
+        res = "could not find caps"
 
     return res
 
