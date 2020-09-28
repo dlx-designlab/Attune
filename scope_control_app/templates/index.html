@@ -176,7 +176,21 @@
   </div>
 
   <div class="uid w3-display-bottomleft">
-      <p>UID: {{ userId }}</p>
+    <p>
+    <label for="uuid">UID:</label>
+    <select name="uuid" id="uuids_list_box" onchange="updateUUID()">
+        <option value="{{ userId }}" selected>{{ userId }}</option>
+          
+        <!-- list all existing users on the device server-->
+        {% for uuid in existingUsers %}
+            {% if uuid != userId %}
+                <option value="{{ uuid }}">{{ uuid }}</option>
+            {% endif %}
+        {%endfor%}
+
+    </select>
+    </p>
+      <!-- <button id="uuidBtn" class="uuid-btn fas fa-sync-alt fa-xs"></button> -->
   </div>
 <!-- 
     <div class="video-feed">
@@ -464,9 +478,43 @@
 
 
     motionCtlBtn.onclick = function() {
-      motionCtlPopup.style.display = "block";
-      leftBtnsPanel.style.display="none";
+        motionCtlPopup.style.display = "block";
+        leftBtnsPanel.style.display="none";
     }
+
+
+    function updateUUID(){
+        var uuidsListBoxVal = document.getElementById('uuids_list_box').value;
+        console.log(uuidsListBoxVal)
+        document.cookie = "scan_uuid=" + uuidsListBoxVal + ";max-age=" + 90*24*60*60 + ";";
+    }
+
+    // uuidBtn.onclick = function() {
+    
+    //     $.ajax({
+    //         type: 'GET',
+    //         url: '/get_uuids_list',
+    //         contentType: 'application/json;charset=UTF-8',
+    //         //   data: JSON.stringify({'timestamp': timeStamp}),
+    //         success: function(result) {                    
+                    
+    //                 var uuids_list = result.split(",");
+    //                 var uuids_select = document.getElementById("uuids_list_box");
+
+    //                 for(let i = 0; i < uuids_list.length; i++){
+    //                     console.log(uuids_list[i]);
+    //                     uuids_select.options[uuids_select.options.length] = new Option(uuids_list[i], uuids_list[i]);
+    //                 }
+
+    //                 // document.getElementById("status").innerHTML = result;
+    //         },
+    //         error: function(result) {
+    //                 document.getElementById("status").innerHTML = "ERROR!";
+
+    //         }
+    //     });
+
+    // }
 
 
     closePanelButtons.forEach(item => {

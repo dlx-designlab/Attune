@@ -7,10 +7,11 @@ import time
 import uuid
 import datetime
 from os import listdir
-from os.path import isfile, join
+from os.path import isfile, isdir, join
 from pathlib import Path
 from pyzip import PyZip
 from pyfolder import PyFolder
+# from pyexiv2 import Image
 # import argparse
 # import keyboard
 import cv2
@@ -54,6 +55,10 @@ DETECTOR = CapDetector()
 
 @APP.route("/")
 def index():
+    
+    # get existing users on device
+    uuids_folder = "static/captured_pics/"
+    users_dir_list = [f for f in listdir(uuids_folder) if isdir(join(uuids_folder, f))]
 
     cookies = request.cookies
 
@@ -63,17 +68,19 @@ def index():
         res = make_response(render_template("index.html", 
                                             scopeSettings=controls_dict, 
                                             userId=uid, 
+                                            existingUsers = users_dir_list, 
                                             settingsMode=UVC_SETTINGS["setting_available"], 
                                             roboscopeMdde = UVC_SETTINGS["robo_scope_mode"],
                                             step_size = UVC_SETTINGS["default_step_size"],
                                             feed_rate = UVC_SETTINGS["default_feed_rate"]))
     else:
-        # Generate a random UID 8 characters long
+        # Generate a random UID 6 characters long
         uid = uuid.uuid4().hex
-        uid = uid.upper()[0:8]
+        uid = uid.upper()[0:6]
         res = make_response(render_template("index.html", 
                                             scopeSettings=controls_dict, 
                                             userId=uid, 
+                                            existingUsers = users_dir_list, 
                                             settingsMode=UVC_SETTINGS["setting_available"], 
                                             roboscopeMdde = UVC_SETTINGS["robo_scope_mode"],
                                             step_size = UVC_SETTINGS["default_step_size"],
@@ -91,6 +98,12 @@ def index():
 
     # return the rendered template
     return res
+
+# @APP.route('/get_uuids_list', methods=['GET'])
+# def get_uuids_list():
+#     uuids_folder = "static/captured_pics/"
+#     dir_list = [f for f in listdir(uuids_folder) if isdir(join(uuids_folder, f))]
+#     return  ",".join(dir_list)
 
 
 @APP.route('/set_control', methods=['POST'])
@@ -148,7 +161,7 @@ def parse_grbl_cmd():
         elif cmd == 'Z':
             grbl_control.jog_step(0, 0, val)
         
-        res = f"XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG:{ sensors.get_range() } TMP: {sensors.get_temp()}"
+        res = f"XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG: { sensors.get_range() } TMP: {sensors.get_temp()}"
     else:
         res = "could not set!"
 
@@ -182,10 +195,12 @@ def home_finger():
         
         grbl_control.jog_to_pos(FINGER_HOME_POS["x_pos"], FINGER_HOME_POS["y_pos"], new_z_pos)
         
-        res = f"Finger Home! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG:{ sensors.get_range() } TMP: {sensors.get_temp()}"
+        res = f"Finger Home! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG: { sensors.get_range() } TMP: {sensors.get_temp()}"
     
     else:
         res = "Could not home finger"
+
+    return res
 
 
 @APP.route('/find_caps', methods=['POST'])
@@ -221,7 +236,7 @@ def find_capillaries():
         
         grbl_control.jog_to_pos(grbl_control.xPos, max_caps_postition, grbl_control.zPos)
         
-        res = f"Detected! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG:{ sensors.get_range() } TMP: {sensors.get_temp()}"
+        res = f"Detected! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG: { sensors.get_range() } TMP: {sensors.get_temp()}"
     
     else:
         res = "could not find caps"
@@ -241,7 +256,12 @@ def save_image():
         # Image.fromarray(im_rgb).save(filename)
         with lock:
             cv2.imwrite(filename, outputFrame.bgr)
-            res = "file saved!"
+            
+        # Save metadata txt file
+        save_metadata(filename)
+
+        res = "file saved!"
+
     else:
         res = "could not save!"
 
@@ -281,11 +301,14 @@ def save_image_panorma():
                 cv2.imwrite(filename, outputFrame.bgr)
                 res = "file saved!"
             
+            # Save metadata txt file
+            save_metadata(filename)        
+            
             x_pos += PANORAMA_SIZE["step"]
             grbl_control.jog_to_pos(x_pos, y_pos, z_pos)
-            
-        
+                    
         res = f"Panorma Done! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos}"
+    
     else:
         res = "could not save!"
 
@@ -317,7 +340,12 @@ def save_video():
                 out.write(frame)
 
         out.release()
+        
+        # Save metadata txt file
+        save_metadata(filename)
+        
         res = "file saved!"
+        
     else:
         res = "could not save!"
 
@@ -336,8 +364,10 @@ def img_gallery():
     cookies = request.cookies
     uid = cookies.get("scan_uuid")
 
+    # get the list of files in the UID folder (ignore .txt files which contain metadata)
     user_files_path = f"static/captured_pics/{uid}"
-    files_list = [f for f in listdir(user_files_path) if isfile(join(user_files_path, f))]
+    files_list = [f for f in listdir(user_files_path) if 
+                 (isfile(join(user_files_path, f)) and not f.endswith('.txt'))]
     files_list.sort(reverse=True)
 
     return render_template('gallery.html', userId=uid, images=files_list)
@@ -388,6 +418,19 @@ def make_file_name(req_data, file_ext, pan_pos = "0"):
     file_name = f"static/captured_pics/{uid}/cap_{uid}_{date_string}_f{foc}_pan{pan_pos}.{file_ext}"
 
     return file_name
+
+
+def save_metadata(media_file_name):
+    # add position and sensor data to captured image metadata
+    
+    # Todo: save the info into the actual image metadata (pyexiv2 works only with python x64)
+    
+    f = media_file_name.split(".")[0]
+    with open(f"{f}.txt", "w") as img_meta:
+        img_meta.write(f"x:{grbl_control.xPos}, y:{grbl_control.yPos}, z:{grbl_control.zPos}, rng:{ sensors.get_range() }, tmp:{sensors.get_temp()}")
+        # exif_metadata = {'Exif.Photo.UserComment': 'xyz'}
+        # img.modify_exif(exif_metadata)
+
 
 def auto_focus():
     # Auto Focus the scope using OpenCV
