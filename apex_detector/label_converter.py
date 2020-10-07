@@ -7,6 +7,7 @@ import math
 
 img_w = 1280
 img_h = 720
+radius_padding = 10
 
 for filename in paths.list_files("data/to_lbl/YOLO/test/", validExts=".json"):
     # open the JSON
@@ -23,7 +24,7 @@ for filename in paths.list_files("data/to_lbl/YOLO/test/", validExts=".json"):
         for count, tag in enumerate (tags["shapes"], 0):
             a = abs(tag["points"][0][0] - tag["points"][1][0])
             b = abs(tag["points"][0][1] - tag["points"][1][1])
-            radius = math.sqrt(math.pow(a,2) + math.pow(b,2))
+            radius = math.sqrt(math.pow(a,2) + math.pow(b,2)) + radius_padding
 
             new_point = ((tag["points"][0][0]) / img_w, (tag["points"][0][1]) / img_h, radius * 2 / img_w, radius * 2 / img_h)
             f.write(f"1 {new_point[0]} {new_point[1]} {new_point[2]} {new_point[3]}\n")
