@@ -33,17 +33,36 @@ for imagePath in paths.list_images("data/training/"):
     # prepare the image for analysis remove noise, extract gren channel, etc...
     gray = functions.enhance_green(image)
 
-    # extract Histogram of Oriented Gradients from the image
-    H = feature.hog(gray,
-                    orientations=9,
-                    pixels_per_cell=(10, 10),
-                    cells_per_block=(3, 3),
-                    transform_sqrt=True,
-                    block_norm="L1")
+    # # extract Histogram of Oriented Gradients from the image
+    # H = feature.hog(gray,
+    #                 orientations=9,
+    #                 pixels_per_cell=(10, 10),
+    #                 cells_per_block=(3, 3),
+    #                 transform_sqrt=True,
+    #                 block_norm="L1")
+    H = cv2.adaptiveThreshold(cv2.medianBlur(gray, 11),
+                                             255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                                             cv2.THRESH_BINARY, 51, 5).flatten()
     
     # update the data and labels
     data.append(H)
     labels.append(tag)
+
+    # Add blurred copies of the cap images to aid out of focus detection
+    if tag == "cap":
+        blurred_image = cv2.blur(image, (20, 20))
+        blurred_gray = functions.enhance_green(blurred_image)
+        # blurred_H = feature.hog(blurred_gray,
+        #             orientations=9,
+        #             pixels_per_cell=(10, 10),
+        #             cells_per_block=(3, 3),
+        #             transform_sqrt=True,
+        #             block_norm="L1")
+        blurred_H = cv2.adaptiveThreshold(cv2.medianBlur(gray, 11),
+                                          255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                                          cv2.THRESH_BINARY, 51, 5).flatten()
+        data.append(blurred_H)
+        labels.append(tag)
 
 print("Data Loaded!")
 print(f"Samples: {len(data)}")
