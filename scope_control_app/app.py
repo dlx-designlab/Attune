@@ -1,4 +1,4 @@
-""" The Main Module of the cope control APP """
+""" The Main Module of the Attune Scope control APP """
 import json
 import math
 import logging
@@ -15,10 +15,16 @@ from pyfolder import PyFolder
 # import argparse
 # import keyboard
 import cv2
+
 # Camera UVC Properties control library
 import uvc  # >> https://github.com/pupil-labs/pyuvc
+
 # GRBL Control Class
 from grbl import GrblControl
+
+# File managing class
+from file_manager import FileManager
+
 # Sensors feed class
 from sensors import SensorsFeed
 from cap_detector import CapDetector
@@ -51,6 +57,8 @@ PANORAMA_SIZE =  {"width": 4, "height": 2, "step": 0.5}
 FINGER_HOME_POS =  {"x_pos": 6, "y_pos": 4, "scope_min_dist": 20}
 
 DETECTOR = CapDetector()
+
+FILE_MNGR = FileManager()
 
 
 @APP.route("/")
@@ -366,11 +374,14 @@ def img_gallery():
 
     # get the list of files in the UID folder (ignore .txt files which contain metadata)
     user_files_path = f"static/captured_pics/{uid}"
-    files_list = [f for f in listdir(user_files_path) if 
-                 (isfile(join(user_files_path, f)) and not f.endswith('.txt'))]
-    files_list.sort(reverse=True)
+    try:
+        files_list = [f for f in listdir(user_files_path) if 
+                    (isfile(join(user_files_path, f)) and not f.endswith('.txt'))]
+        files_list.sort(reverse=True)
 
-    return render_template('gallery.html', userId=uid, images=files_list)
+        return render_template('gallery.html', userId=uid, images=files_list)
+    except:
+        return f"Oops! Seems like no images were captured for UID:{uid}, yet..."
 
 
 @APP.route("/download_gallery")
@@ -385,6 +396,18 @@ def download_gallery():
 
     try:
         return send_file(zipped_filename, as_attachment=True, attachment_filename=f'{uid}.zip')
+    except Exception as exception:
+        return str(exception)
+
+
+@APP.route("/backup_gallery")
+def backup_gallery():
+    cookies = request.cookies
+    uid = cookies.get("scan_uuid")
+
+    try:
+        FILE_MNGR.copy_to_usb(uid)
+        return f"USB backup complete for user: {uid}"
     except Exception as exception:
         return str(exception)
 
