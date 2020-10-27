@@ -5,19 +5,19 @@ import numpy as np
 import time
 from collections import deque
 from scipy import ndimage as ndi
-from skimage.filters import frangi, gabor_kernel, hessian
-import pickle
-from skimage import feature
+
+# import pycuda.autoinit  # This is needed for initializing CUDA driver
+
+# from utils.yolo_with_plugins import TrtYOLO
 
 # import uvc
 
 class CapDetector:
     
     def __init__(self):
-        self.focus_kernel = np.real(gabor_kernel(0.4, theta=0, sigma_x=3, sigma_y=3))
+        # self.focus_kernel = np.real(gabor_kernel(0.4, theta=0, sigma_x=3, sigma_y=3))
         self.oil_threshold = 0.8
         self.status = 0
-        self.model = pickle.load(open('modelthresh', 'rb'))
         self.sample_size = 60
         self.sl_win_step = 40
         self.box_overlap_thresh = 0.3
@@ -35,80 +35,16 @@ class CapDetector:
         resized_frame = cv2.resize(frame.gray, (320, 180), interpolation=cv2.INTER_CUBIC)
         
         # TODO: crop to center of the frame
-        focus_val = ndi.convolve(resized_frame, self.focus_kernel, mode='wrap').mean()
+        # focus_val = ndi.convolve(resized_frame, self.focus_kernel, mode='wrap').mean()
         
         return focus_val
 
 
-    def check_oil(self, frame):
-        is_oil = False
-
-        resized_frame = cv2.resize(frame.gray, (320, 180), interpolation=cv2.INTER_CUBIC)
-        top_frame = resized_frame[0:90, 0:320]
-        bottom_frame = resized_frame[90:180, 0:320]
-
-        top_val = ndi.convolve(top_frame, self.focus_kernel, mode='wrap').mean()
-        bottom_val = ndi.convolve(bottom_frame, self.focus_kernel, mode='wrap').mean()
-
-        is_oil = bottom_val < top_val * self.oil_threshold
-        return is_oil
-
-
-    def enhance_green(self, img):
-        """ This function prepares the image for analysis """
-
-        # remove noise
-        img = cv2.medianBlur(img, self.nr_level)
-        # split RGB channels
-        img_blue_c1, img_green_c1, img_red_c1 = cv2.split(img)
-
-        return img_green_c1
-
-
-    def check_caps(self, frame):        
-        test_gray = self.enhance_green(frame.bgr)
-
-        threshold_image = cv2.adaptiveThreshold(cv2.medianBlur(test_gray, 11),
-								        		255, cv2.ADAPTIVE_THRESH_MEAN_C,
-								        		cv2.THRESH_BINARY, 51, 5)
-        
-        detected_objects = []
-        (winW, winH) = (self.sample_size, self.sample_size) 
-
-        for (x, y, window) in self.sliding_window(test_gray,
-                                                       stepSize=self.sl_win_step,
-                                                       windowSize=(winW, winH)):
-            # if the window does not meet our desired window size, ignore it
-            if window.shape[0] != winH or window.shape[1] != winW:
-                continue
-
-            threshold_window = threshold_image[y: y+winH, x: x+winW]
-            if (np.count_nonzero(threshold_window) >  self.threshold_count_threshold * self.sample_size ** 2):
-                continue
-
-            # If too many of the pixels are overexposed skip the entire window as glare is present
-            if (np.count_nonzero(window > self.overexposure_threshold) > self.overexposure_count_threshold * self.sample_size ** 2):
-                continue
-
-            (H) =  threshold_window.flatten()
-
-            pred_conf = int(self.model.decision_function(H.reshape(1, -1))[0] * 100)
-
-            if pred_conf < 0:
-                detected_objects.append([x, y, x + winW, y + winH, abs(pred_conf)])
-
-
-        # convert detected objects to NumPy Array and preform "Non-Maximum Suppression" to remove redundant detections
-        detected_objects_array = np.array(detected_objects)
-        refined_detector = self.non_max_suppression_fast(detected_objects_array, self.box_overlap_thresh)
-
-        top_count = sum(x[1] < 540 for x in refined_detector)
-        bottom_count = len(refined_detector) - top_count
-
-        print(f"Top    :{top_count}")
-        print(f"Bottom :{bottom_count}")
-
-        return bottom_count - top_count
+    def check_caps(self, frame):
+        return 0
+        # trt_yolo = TrtYOLO('yolov4-tiny-custom-416', (416, 416), 1)
+        # boxes, confs, clss = trt_yolo.detect(frame.bgr, 0.3)
+        # return len(boxes)
 
 
     #  HELPER FUNCTIONS

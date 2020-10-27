@@ -33,6 +33,13 @@ from cap_detector import CapDetector
 from flask import (Flask, Response, jsonify, make_response, redirect,
                    render_template, request, send_file, url_for)
 
+import pycuda.autoinit  # This is needed for initializing CUDA driver
+import pycuda.driver as cuda
+
+from utils.yolo_with_plugins import TrtYOLO
+cuda_ctx = cuda.Device(0).make_context()
+trt_yolo = TrtYOLO('yolov4-tiny-custom-416', (416, 416), 1, cuda_ctx)
+
 # initialize a flask object
 APP = Flask(__name__)
 
@@ -213,7 +220,7 @@ def home_finger():
 
 @APP.route('/find_caps', methods=['POST'])
 def find_capillaries():
-    global FOCUS, DETECTOR, FINGER_HOME_POS, outputFrame, controls_dict
+    global FOCUS, DETECTOR, FINGER_HOME_POS, outputFrame, controls_dict, trt_yolo
     
     if request.method == 'POST' and request.is_json:
         req_data = request.get_json()
@@ -231,21 +238,25 @@ def find_capillaries():
         # time.sleep(0.5)
         print("Looking for caps...")
         
-        grbl_control.stepSize = 0.2        
-        max_caps = 0
-        max_caps_postition = grbl_control.yPos
+        # grbl_control.stepSize = 0.2        
+        # max_caps = 0
+        # max_caps_postition = grbl_control.yPos
 
-        for _ in range(20):
-            grbl_control.jog_step(0, 1, 0)
-            caps = DETECTOR.check_caps(outputFrame)
-            if caps > max_caps:
-                max_caps = caps
-                max_caps_postition = grbl_control.yPos
+        # for _ in range(20):
+        #     grbl_control.jog_step(0, 1, 0)
+        #     caps = DETECTOR.check_caps(outputFrame)
+        #     if caps > max_caps:
+        #         max_caps = caps
+        #         max_caps_postition = grbl_control.yPos
         
-        grbl_control.jog_to_pos(grbl_control.xPos, max_caps_postition, grbl_control.zPos)
+        # grbl_control.jog_to_pos(grbl_control.xPos, max_caps_postition, grbl_control.zPos)
         
-        res = f"Detected! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG: { sensors.get_range() } TMP: {sensors.get_temp()}"
+        # res = f"Detected! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG: { sensors.get_range() } TMP: {sensors.get_temp()}"
     
+        # caps = DETECTOR.check_caps(outputFrame)
+        boxes, confs, clss = trt_yolo.detect(outputFrame.bgr, 0.3)
+        res = f"Capillaries: {len(boxes)}"
+
     else:
         res = "could not find caps"
 
@@ -495,7 +506,6 @@ def capture_frame():
     # grab global references to the video stream, output frame, and lock variables
     global SCOPE_RESET_REQUIRED, cap, outputFrame, lock, isCapturing
     # cap_mode = cap.avaible_modes[UVC_SETTINGS["capture_mode"]]
-
     while True:
         if isCapturing:            
             # reset scope capture setting every "SCOPE_RESET_FREQ" seconds. 
