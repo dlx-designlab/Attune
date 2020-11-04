@@ -6,11 +6,13 @@ import threading
 import time
 import uuid
 import datetime
+from collections import deque
 from os import listdir
 from os.path import isfile, isdir, join
 from pathlib import Path
 from pyzip import PyZip
 from pyfolder import PyFolder
+from statistics import mean
 # from pyexiv2 import Image
 # import argparse
 # import keyboard
@@ -196,19 +198,19 @@ def home_finger():
         # Move scope to a rough, pre-scan starting position
         grbl_control.jog_to_pos(FINGER_HOME_POS["x_pos"], FINGER_HOME_POS["y_pos"], range_measure_z_pos)
         time.sleep(1)
-        # Check finger size and move scope down to pre-scan distance
-        range_log = []
-        while len(range_log) < 50:
-            range_log.append(sensors.get_range())
-            time.sleep(0.01)
+        # # Check finger size and move scope down to pre-scan distance
+        # range_log = []
+        # while len(range_log) < 50:
+        #     range_log.append(sensors.get_range())
+        #     time.sleep(0.01)
         
-        ave_rng = sum(range_log) / len(range_log)
-        new_z_pos = math.floor(ave_rng - FINGER_HOME_POS["scope_min_dist"])
+        # ave_rng = sum(range_log) / len(range_log)
+        # new_z_pos = math.floor(ave_rng - FINGER_HOME_POS["scope_min_dist"])
         
-        # print(range_log)
-        print(f"Averahge Range: {ave_rng} Adjusting height to: {new_z_pos}")
+        # # print(range_log)
+        # print(f"Averahge Range: {ave_rng} Adjusting height to: {new_z_pos}")
         
-        grbl_control.jog_to_pos(FINGER_HOME_POS["x_pos"], FINGER_HOME_POS["y_pos"], new_z_pos)
+        # grbl_control.jog_to_pos(FINGER_HOME_POS["x_pos"], FINGER_HOME_POS["y_pos"], new_z_pos)
         
         res = f"Finger Home! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG: { sensors.get_range() } TMP: {sensors.get_temp()}"
     
@@ -226,36 +228,53 @@ def find_capillaries():
         req_data = request.get_json()
         val = int(req_data['value'])
 
-        # print("Focusing...")
-        # auto_focus()
-        
-        # # print("Adjusting Z Height...")        
-        # print("Looking for oil...")
-        # while not DETECTOR.check_oil(outputFrame):
-        #     grbl_control.jog_step(0, 1, 0)
+        home_finger()
 
-        # grbl_control.jog_step(0, 10, 0)
-        # time.sleep(0.5)
+        grbl_control.stepSize = 0.2
+        print("Focusing...")
+        scores = deque([0]*3)
+        prev_mean = mean(scores)
+        while True and grbl_control.zPos > -10:
+            grbl_control.jog_step(0, 0, 1)
+            scores.pop()
+            scores.appendleft(DETECTOR.check_focus(outputFrame))
+            current_mean = mean(scores)
+            if (current_mean < prev_mean * 0.8):
+                grbl_control.jog_step(0, 0, -2)
+                break
+            prev_mean = current_mean
+        
         print("Looking for caps...")
-        
-        # grbl_control.stepSize = 0.2        
-        # max_caps = 0
-        # max_caps_postition = grbl_control.yPos
+        capillaries_found = False
+        focus = 20
+        while True and grbl_control.yPos < -1:
+            grbl_control.jog_step(0, -1, 0)
+            focus_score = DETECTOR.check_focus(outputFrame)
+            focus += 1
+            controls_dict['Absolute Focus'].value = focus
+            time.sleep(0.01)
+            controls_dict['Absolute Focus'].value = focus
+            time.sleep(0.05)
+            if DETECTOR.check_focus(outputFrame) < focus_score:
+                focus -= 2
+                controls_dict['Absolute Focus'].value = focus
+                time.sleep(0.1)
+                controls_dict['Absolute Focus'].value = focus
+                time.sleep(0.1)
+                if DETECTOR.check_focus(outputFrame) < focus_score:
+                            focus += 1
+                            controls_dict['Absolute Focus'].value = focus
+                            time.sleep(0.1)
+                            controls_dict['Absolute Focus'].value = focus
+                            time.sleep(0.1)
+            boxes, confs, clss = trt_yolo.detect(outputFrame.bgr, 0.3)
+            if len(boxes) > 5:
+                capillaries_found = True
+            if len(boxes) < 2 and capillaries_found:
+                break
 
-        # for _ in range(20):
-        #     grbl_control.jog_step(0, 1, 0)
-        #     caps = DETECTOR.check_caps(outputFrame)
-        #     if caps > max_caps:
-        #         max_caps = caps
-        #         max_caps_postition = grbl_control.yPos
-        
-        # grbl_control.jog_to_pos(grbl_control.xPos, max_caps_postition, grbl_control.zPos)
-        
-        # res = f"Detected! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG: { sensors.get_range() } TMP: {sensors.get_temp()}"
-    
-        # caps = DETECTOR.check_caps(outputFrame)
-        boxes, confs, clss = trt_yolo.detect(outputFrame.bgr, 0.3)
-        res = f"Capillaries: {len(boxes)}"
+        grbl_control.jog_step(0, 8, 0)
+        res = "Capillaries found"
 
     else:
         res = "could not find caps"
@@ -467,38 +486,48 @@ def save_metadata(media_file_name):
 
 
 def auto_focus():
-    # Auto Focus the scope using OpenCV
-    global FOCUS, DETECTOR, outputFrame, controls_dict
+    # # Auto Focus the scope using OpenCV
+    # global FOCUS, DETECTOR, FINGER_HOME_POS, outputFrame, controls_dict
 
-    MIN_FOCUS = 5
-    MAX_FOCUS = 90
+    # MIN_FOCUS = 5
+    # MAX_FOCUS = 90
     
-    # FOCUS = get_current_focus(FOCUS)
-    # res = f"Absolute Focus: {FOCUS}"
+    # # FOCUS = get_current_focus(FOCUS)
+    # # res = f"Absolute Focus: {FOCUS}"
 
-    controls_dict['Auto Focus'].value = 0
+    # controls_dict['Auto Focus'].value = 0
 
-    max_focus_score = 0
-    optimal_focus = MAX_FOCUS
+    # max_focus_score = 0
+    # optimal_focus = MIN_FOCUS
 
-    for man_focus in range(MIN_FOCUS, MAX_FOCUS, 2):
+    # controls_dict['Absolute Focus'].value = optimal_focus
+    # time.sleep(1)
+    # controls_dict['Absolute Focus'].value = optimal_focus
+    # time.sleep(1)
+
+    # for man_focus in range(MIN_FOCUS, MAX_FOCUS, 2):
         
-        controls_dict['Absolute Focus'].value = man_focus
-        # time.sleep(0.01)
-        focus_score = DETECTOR.check_focus(outputFrame)
+    #     controls_dict['Absolute Focus'].value = man_focus
+    #     # time.sleep(0.01)
+    #     focus_score = DETECTOR.check_focus(outputFrame)
 
-        if focus_score > max_focus_score:
-            max_focus_score = focus_score
-            optimal_focus = man_focus
+    #     if focus_score > max_focus_score:
+    #         max_focus_score = focus_score
+    #         optimal_focus = man_focus
         
-        print(man_focus)
+    #     print(f"{man_focus} {focus_score}")
 
-    controls_dict['Absolute Focus'].value = optimal_focus
+    # optimal_focus -= 12
+
+    # controls_dict['Absolute Focus'].value = 60
+    # grbl_control.jog_to_pos(FINGER_HOME_POS["x_pos"], FINGER_HOME_POS["y_pos"], 9.2-optimal_focus*0.061)
+    # time.sleep(1)
+    # controls_dict['Absolute Focus'].value = 60
     time.sleep(1)
 
-    FOCUS = get_current_focus(FOCUS)
-    print(f"opt f: {optimal_focus}")
-    print(f"cur f: {FOCUS}")
+    # FOCUS = get_current_focus(FOCUS)
+    # print(f"opt f: {optimal_focus}")
+    # print(f"cur f: {FOCUS}")
 
 
 # Captures frames in the background (in a separate thread)

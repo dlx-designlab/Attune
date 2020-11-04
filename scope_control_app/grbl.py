@@ -5,9 +5,9 @@ class GrblControl:
 
     def __init__(self, dev_addr, def_step_size, def_feed_rate):
         
-        self.xPos = 0
-        self.yPos = 0
-        self.zPos = 0
+        self.xPos = -1
+        self.yPos = -1
+        self.zPos = -1
         self.focus = 0
         self.stepSize = def_step_size
         self.feedRate = def_feed_rate
@@ -21,6 +21,9 @@ class GrblControl:
         self.grbl_ser.write(('\r\n\r\n').encode())
         time.sleep(2)  # Wait for grbl to initialize
         self.grbl_ser.flushInput()  # Flush startup text in serial input
+
+        self.posMultiplier = -1
+
         print("Connected!")
 
 
@@ -44,34 +47,34 @@ class GrblControl:
     # Dist is +1 or -1 to determine direction
     # The scope will be moved by one step
     def jog_step(self, x_dist, y_dist, z_dist):
-        self.xPos = round(self.xPos + self.stepSize * x_dist, 1)
-        self.yPos = round(self.yPos + self.stepSize * y_dist, 1)
-        self.zPos = round(self.zPos + self.stepSize * z_dist, 1)
+        self.xPos = round(self.xPos + self.stepSize * x_dist * self.posMultiplier, 1)
+        self.yPos = round(self.yPos + self.stepSize * y_dist * self.posMultiplier, 1)
+        self.zPos = round(self.zPos + self.stepSize * z_dist * self.posMultiplier, 1)
 
-        the_cmd = f'$J=X{self.xPos} Y{self.yPos} Z{self.zPos} F{self.feedRate}'
+        the_cmd = f'G1 X{self.xPos} Y{self.yPos} Z{self.zPos} F{self.feedRate}'
         jog_result = self.send_grbl_cmd(the_cmd)
         
         # Cehck if jog was successful
         if "error" in jog_result:
             print("jog out of bounds")
             # Undo position adjustment
-            self.xPos = round(self.xPos - self.stepSize * x_dist, 1)
-            self.yPos = round(self.yPos - self.stepSize * y_dist, 1)
-            self.zPos = round(self.zPos - self.stepSize * z_dist, 1)
+            self.xPos = round(self.xPos - self.stepSize * x_dist * self.posMultiplier, 1)
+            self.yPos = round(self.yPos - self.stepSize * y_dist * self.posMultiplier, 1)
+            self.zPos = round(self.zPos - self.stepSize * z_dist * self.posMultiplier, 1)
 
     # Jog the Scope to a spcific position
     def jog_to_pos(self, x_pos, y_pos, z_pos):
 
-        the_cmd = f'$J=X{x_pos} Y{y_pos} Z{z_pos} F{self.feedRate}'
+        the_cmd = f'G1 X{x_pos * self.posMultiplier} Y{y_pos * self.posMultiplier} Z{z_pos * self.posMultiplier} F{self.feedRate}'
         jog_result = self.send_grbl_cmd(the_cmd)
         
         # Cehck if jog was successful
         if "error" in jog_result:
             print("jog out of bounds")
         else:
-            self.xPos = x_pos
-            self.yPos = y_pos
-            self.zPos = z_pos
+            self.xPos = x_pos * self.posMultiplier
+            self.yPos = y_pos * self.posMultiplier
+            self.zPos = z_pos * self.posMultiplier
 
 
     def run_home_cycle(self):
@@ -79,9 +82,9 @@ class GrblControl:
         self.send_grbl_cmd('$H')
 
         # todo: create default setings file
-        self.xPos = 0
-        self.yPos = 0
-        self.zPos = 0
+        self.xPos = -1
+        self.yPos = -1
+        self.zPos = -1
 
         # print("Moving to start position...")
         # the_cmd = f'G0 X{self.xPos} Y{self.yPos} Z{self.zPos}'

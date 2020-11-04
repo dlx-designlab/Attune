@@ -15,7 +15,7 @@ class CapDetector:
     
     def check_focus(self, frame):
         resized_frame = cv2.resize(frame.gray, (320, 180), interpolation=cv2.INTER_CUBIC)
-        focus_val = ndi.convolve(resized_frame, self.focus_kernel, mode='wrap').mean()
+        focus_val = ndi.convolve(resized_frame, self.focus_kernel, mode='wrap').var()
         
         return focus_val
 
