@@ -49,7 +49,7 @@ class GrblControl:
         self.yPos = round(self.yPos + self.stepSize * y_dist, 1)
         self.zPos = round(self.zPos + self.stepSize * z_dist, 1)
 
-        the_cmd = f'G1 X{self.xPos} Y{self.yPos} Z{self.zPos} F{self.feedRate}'
+        the_cmd = f'$J=X{self.xPos} Y{self.yPos} Z{self.zPos} F{self.feedRate}'
         jog_result = self.send_grbl_cmd(the_cmd)
         
         # Cehck if jog was successful
@@ -74,6 +74,8 @@ class GrblControl:
             self.yPos = y_pos
             self.zPos = z_pos
 
+    def jog_cancel(self):
+        self.send_grbl_cmd(f'0x85')
 
     def run_home_cycle(self):
         print("Homing...")

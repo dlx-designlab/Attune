@@ -193,7 +193,7 @@ def home_finger():
         req_data = request.get_json()
         val = int(req_data['value'])
         grbl_control.stepSize = 0.2
-        range_measure_z_pos = 1 # from which Z-postion to take range measurement
+        range_measure_z_pos = 0 # from which Z-postion to take range measurement
 
         # Move scope to a rough, pre-scan starting position
         grbl_control.jog_to_pos(FINGER_HOME_POS["x_pos"], FINGER_HOME_POS["y_pos"], range_measure_z_pos)
@@ -229,53 +229,30 @@ def find_capillaries():
         val = int(req_data['value'])
 
         home_finger()
-
         grbl_control.stepSize = 0.2
+
         print("Focusing...")
         scores = deque([0]*3)
         prev_mean = mean(scores)
-        while True and grbl_control.zPos > -10:
+        while grbl_control.zPos < 10:
             grbl_control.jog_step(0, 0, 1)
             scores.pop()
             scores.appendleft(DETECTOR.check_focus(outputFrame))
             current_mean = mean(scores)
             if (current_mean < prev_mean * 0.8):
-                grbl_control.jog_step(0, 0, -2)
+                grbl_control.jog_step(0, 0, -6)
                 break
             prev_mean = current_mean
-        
-        print("Looking for caps...")
-        capillaries_found = False
-        focus = 20
-        while True and grbl_control.yPos < -1:
-            grbl_control.jog_step(0, -1, 0)
-            focus_score = DETECTOR.check_focus(outputFrame)
-            focus += 1
-            controls_dict['Absolute Focus'].value = focus
-            time.sleep(0.01)
-            controls_dict['Absolute Focus'].value = focus
-            time.sleep(0.05)
-            if DETECTOR.check_focus(outputFrame) < focus_score:
-                focus -= 2
-                controls_dict['Absolute Focus'].value = focus
-                time.sleep(0.1)
-                controls_dict['Absolute Focus'].value = focus
-                time.sleep(0.1)
-                if DETECTOR.check_focus(outputFrame) < focus_score:
-                            focus += 1
-                            controls_dict['Absolute Focus'].value = focus
-                            time.sleep(0.1)
-                            controls_dict['Absolute Focus'].value = focus
-                            time.sleep(0.1)
-            boxes, confs, clss = trt_yolo.detect(outputFrame.bgr, 0.3)
-            if len(boxes) > 5:
-                capillaries_found = True
-            if len(boxes) < 2 and capillaries_found:
+
+        print("Finding...")
+        while grbl_control.yPos < 12:
+            grbl_control.jog_step(0, 5, 0)
+            time.sleep(1)
+            boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
+            if len(boxes) > 2:
                 break
-
-        grbl_control.jog_step(0, 8, 0)
+            
         res = "Capillaries found"
-
     else:
         res = "could not find caps"
 
