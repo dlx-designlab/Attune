@@ -244,7 +244,7 @@ def find_capillaries():
                 break
             prev_mean = current_mean
 
-        print("Finding...")
+        print("Finding Capillaries...")
         while grbl_control.yPos < 12:
             grbl_control.jog_step(0, 5, 0)
             time.sleep(1)
