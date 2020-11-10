@@ -21,7 +21,7 @@
 "Absolute Exposure Time": 365,
 "setting_available": true,
 "robo_scope_mode": true,
-"grbl_controller_address": "/dev/ttyACM0",
+"grbl_controller_address": "/dev/ttyUSB0",
 "default_step_size": 0.5,
 "default_feed_rate": 1000,
 "fnger_home_pos": {"x_pos": 9.8, "y_pos": 13, "scope_min_dist": 24},
