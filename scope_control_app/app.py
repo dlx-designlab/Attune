@@ -192,11 +192,13 @@ def home_finger():
     if request.method == 'POST' and request.is_json:
         req_data = request.get_json()
         val = int(req_data['value'])
-        grbl_control.stepSize = 0.2
-        range_measure_z_pos = 0 # from which Z-postion to take range measurement
+        range_measure_z_pos = 1 # from which Z-postion to take range measurement
 
         # Move scope to a rough, pre-scan starting position
-        grbl_control.jog_to_pos(FINGER_HOME_POS["x_pos"], FINGER_HOME_POS["y_pos"], range_measure_z_pos)
+        grbl_control.jog_to_pos(FINGER_HOME_POS["x_pos"], grbl_control.yPos, grbl_control.zPos)
+        grbl_control.jog_to_pos(grbl_control.xPos, FINGER_HOME_POS["y_pos"], grbl_control.zPos)
+        grbl_control.jog_to_pos(grbl_control.xPos, grbl_control.yPos, range_measure_z_pos)
+        grbl_control.stepSize = 0.2
         time.sleep(1)
         # # Check finger size and move scope down to pre-scan distance
         # range_log = []
@@ -240,21 +242,37 @@ def find_capillaries():
             scores.appendleft(DETECTOR.check_focus(outputFrame))
             current_mean = mean(scores)
             if (current_mean < prev_mean * 0.8):
-                grbl_control.jog_step(0, 0, -6)
+                grbl_control.stepSize = 1.2
+                grbl_control.jog_step(0, 0, -1)
                 break
             prev_mean = current_mean
 
+        # Look for capillaries
         print("Finding Capillaries...")
-        while grbl_control.yPos < 12:
-            grbl_control.jog_step(0, 5, 0)
-            time.sleep(1)
+        caps_found = False
+        grbl_control.stepSize = 0.5
+
+        while grbl_control.yPos < 12 and not caps_found:
+            grbl_control.jog_step(0, 1, 0)
+            time.sleep(0.5)
             boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
-            if len(boxes) > 2:
-                break
             
-        res = "Capillaries found"
+            # go slower when capillaries are in frame
+            if len(boxes) > 2:
+                ave_y_pos = 0
+                grbl_control.stepSize = 0.2
+                for box in boxes:
+                    ave_y_pos += box[1]
+                if ave_y_pos / len(boxes) < 400:
+                    caps_found = True
+
+        if caps_found:
+            res = "Capillaries found"
+        else:
+            res = "Could not find caps"
+
     else:
-        res = "could not find caps"
+        res = "Could not find caps"
 
     return res
 
