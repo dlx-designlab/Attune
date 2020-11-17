@@ -32,6 +32,4 @@ class SensorsFeed:
         # # print('Light (1x gain): {0}lux'.format(self.rng_sensor.read_lux(adafruit_vl6180x.ALS_GAIN_1)))
         sensorVal = self.rng_sensor.range
         return sensorVal
-        # return 0
-
         

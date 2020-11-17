@@ -233,7 +233,7 @@ def find_capillaries():
         home_finger()
         grbl_control.stepSize = 0.1
 
-        print("Focusing...")
+        print("Focusing.")
         scores = deque([0]*5)
         prev_mean = mean(scores)
         while grbl_control.zPos < 10:
@@ -245,13 +245,13 @@ def find_capillaries():
                 break
             prev_mean = current_mean
 
-        # Look for capillaries
-        print("Finding Capillaries...")
+        print("Finding rough position of capillaries.")
         caps_found = False
         grbl_control.stepSize = 0.5
 
         time.sleep(0.5)
         while grbl_control.yPos < 12:
+            # Take a large step along the y axis then 4 smaller steps along the z axis.
             grbl_control.jog_step(0, 3, -4)
             time.sleep(0.5)
             boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
@@ -287,6 +287,7 @@ def find_capillaries():
             res = "Could not find caps"
             return res
 
+        print("Refining capillary location in small steps.")
         grbl_control.jog_step(0, -4, 0)
         time.sleep(0.5)
         grbl_control.stepSize = 0.2
@@ -298,6 +299,7 @@ def find_capillaries():
             if len(boxes) > 2:
                 break
 
+        print("Adjust focus for most capillaries.")
         grbl_control.stepSize = 0.1
         grbl_control.jog_step(0, 8, -5)
         time.sleep(0.5)
