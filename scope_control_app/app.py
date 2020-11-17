@@ -6,14 +6,14 @@ import threading
 import time
 import uuid
 import datetime
+import pyexiv2
 from collections import deque
-from os import listdir
+from os import listdir, system
 from os.path import isfile, isdir, join
 from pathlib import Path
 from pyzip import PyZip
 from pyfolder import PyFolder
 from statistics import mean
-# from pyexiv2 import Image
 # import argparse
 # import keyboard
 import cv2
@@ -62,7 +62,7 @@ UVC_SETTINGS = None
 SCOPE_RESET_FREQ = 90
 SCOPE_RESET_REQUIRED = False
 # Panorama dementions in mm - Width, Height, step size
-PANORAMA_SIZE =  {"width": 4, "height": 2, "step": 0.5}
+PANORAMA_SIZE =  {"width": 3.5, "height": 2, "step": 0.5}
 FINGER_HOME_POS =  {"x_pos": 6, "y_pos": 4, "scope_min_dist": 20}
 
 DETECTOR = CapDetector()
@@ -199,7 +199,7 @@ def home_finger():
         grbl_control.jog_to_pos(grbl_control.xPos, FINGER_HOME_POS["y_pos"], grbl_control.zPos)
         grbl_control.jog_to_pos(grbl_control.xPos, grbl_control.yPos, range_measure_z_pos)
         grbl_control.stepSize = 0.2
-        time.sleep(1)
+        time.sleep(1.5)
         # # Check finger size and move scope down to pre-scan distance
         # range_log = []
         # while len(range_log) < 50:
@@ -231,10 +231,10 @@ def find_capillaries():
         val = int(req_data['value'])
 
         home_finger()
-        grbl_control.stepSize = 0.2
+        grbl_control.stepSize = 0.1
 
         print("Focusing...")
-        scores = deque([0]*3)
+        scores = deque([0]*5)
         prev_mean = mean(scores)
         while grbl_control.zPos < 10:
             grbl_control.jog_step(0, 0, 1)
@@ -242,8 +242,6 @@ def find_capillaries():
             scores.appendleft(DETECTOR.check_focus(outputFrame))
             current_mean = mean(scores)
             if (current_mean < prev_mean * 0.8):
-                grbl_control.stepSize = 1.2
-                grbl_control.jog_step(0, 0, -1)
                 break
             prev_mean = current_mean
 
@@ -252,24 +250,68 @@ def find_capillaries():
         caps_found = False
         grbl_control.stepSize = 0.5
 
-        while grbl_control.yPos < 12 and not caps_found:
-            grbl_control.jog_step(0, 1, 0)
+        time.sleep(0.5)
+        while grbl_control.yPos < 12:
+            grbl_control.jog_step(0, 3, -4)
             time.sleep(0.5)
             boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
-            
-            # go slower when capillaries are in frame
             if len(boxes) > 2:
-                ave_y_pos = 0
-                grbl_control.stepSize = 0.2
-                for box in boxes:
-                    ave_y_pos += box[1]
-                if ave_y_pos / len(boxes) < 400:
-                    caps_found = True
+                caps_found = True
+                break
+            grbl_control.jog_step(0, 0, 1)
+            time.sleep(0.2)
+            boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
+            if len(boxes) > 2:
+                caps_found = True
+                break
+            grbl_control.jog_step(0, 0, 1)
+            time.sleep(0.2)
+            boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
+            if len(boxes) > 2:
+                caps_found = True
+                break
+            grbl_control.jog_step(0, 0, 1)
+            time.sleep(0.2)
+            boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
+            if len(boxes) > 2:
+                caps_found = True
+                break
+            grbl_control.jog_step(0, 0, 1)
+            time.sleep(0.2)
+            boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
+            if len(boxes) > 2:
+                caps_found = True
+                break
 
-        if caps_found:
-            res = "Capillaries found"
-        else:
+        if not caps_found:
             res = "Could not find caps"
+            return res
+
+        grbl_control.jog_step(0, -4, 0)
+        time.sleep(0.5)
+        grbl_control.stepSize = 0.2
+
+        while grbl_control.yPos < 12:
+            grbl_control.jog_step(0, 1, 0)
+            time.sleep(0.1)
+            boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
+            if len(boxes) > 2:
+                break
+
+        grbl_control.stepSize = 0.1
+        grbl_control.jog_step(0, 8, -5)
+        time.sleep(0.5)
+
+        prev_count = 0
+        for _ in range(20):
+            grbl_control.jog_step(0, 0, 1)
+            time.sleep(0.1)
+            boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
+            if (len(boxes) < prev_count):
+                break
+            prev_count = len(boxes)      
+        
+        res = "Capillaries found"
 
     else:
         res = "Could not find caps"
@@ -324,11 +366,14 @@ def save_image_panorma():
     z_pos = grbl_control.zPos        
     
     start_time = time.time()
+
+    filenames = []
     
     if isCapturing:
         while x_pos <= start_x + PANORAMA_SIZE["width"]:            
             # take a picture
             filename = make_file_name(request.get_json(), "png", pan_pos=f"{int(x_pos*10)}x{int(y_pos*10)}")
+            filenames.append(filename)
             print(f"saving img file: {filename}")
             with lock:
                 cv2.imwrite(filename, outputFrame.bgr)
@@ -339,7 +384,11 @@ def save_image_panorma():
             
             x_pos += PANORAMA_SIZE["step"]
             grbl_control.jog_to_pos(x_pos, y_pos, z_pos)
-                    
+            time.sleep(0.5)
+        
+        out = make_file_name(request.get_json(), "", pan_pos="stitched")
+        system(f"nona -o {out} -m PNG template.pto {' '.join(filenames[-8:])}")
+
         res = f"Panorma Done! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos}"
     
     else:
@@ -469,15 +518,13 @@ def make_file_name(req_data, file_ext, pan_pos = "0"):
 
 
 def save_metadata(media_file_name):
-    # add position and sensor data to captured image metadata
-    
-    # Todo: save the info into the actual image metadata (pyexiv2 works only with python x64)
-    
-    f = media_file_name.split(".")[0]
-    with open(f"{f}.txt", "w") as img_meta:
-        img_meta.write(f"x:{grbl_control.xPos}, y:{grbl_control.yPos}, z:{grbl_control.zPos}, rng:{ sensors.get_range() }, tmp:{sensors.get_temp()}")
-        # exif_metadata = {'Exif.Photo.UserComment': 'xyz'}
-        # img.modify_exif(exif_metadata)
+    global FOCUS
+    # TODO: add sensor data to captured image metadata
+
+    metadata = pyexiv2.ImageMetadata(media_file_name)
+    metadata.read()
+    metadata["Exif.Photo.UserComment"] = f"x:{grbl_control.xPos}, y:{grbl_control.yPos}, z:{grbl_control.zPos}, foc:{ get_current_focus(FOCUS) }"
+    metadata.write()
 
 
 def auto_focus():

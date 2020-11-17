@@ -24,6 +24,6 @@
 "grbl_controller_address": "/dev/ttyUSB0",
 "default_step_size": 0.2,
 "default_feed_rate": 1000,
-"fnger_home_pos": {"x_pos": 6, "y_pos": 1, "scope_min_dist": 24},
+"fnger_home_pos": {"x_pos": 8, "y_pos": 1, "scope_min_dist": 24},
 "panorama_size": {"width": 4, "height": 0.5, "step": 0.5}
 }
