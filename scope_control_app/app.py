@@ -200,19 +200,6 @@ def home_finger():
         grbl_control.jog_to_pos(grbl_control.xPos, grbl_control.yPos, range_measure_z_pos)
         grbl_control.stepSize = 0.2
         time.sleep(1.5)
-        # # Check finger size and move scope down to pre-scan distance
-        # range_log = []
-        # while len(range_log) < 50:
-        #     range_log.append(sensors.get_range())
-        #     time.sleep(0.01)
-        
-        # ave_rng = sum(range_log) / len(range_log)
-        # new_z_pos = math.floor(ave_rng - FINGER_HOME_POS["scope_min_dist"])
-        
-        # # print(range_log)
-        # print(f"Averahge Range: {ave_rng} Adjusting height to: {new_z_pos}")
-        
-        # grbl_control.jog_to_pos(FINGER_HOME_POS["x_pos"], FINGER_HOME_POS["y_pos"], new_z_pos)
         
         res = f"Finger Home! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG: { sensors.get_range() } TMP: {sensors.get_temp()}"
     
@@ -231,19 +218,33 @@ def find_capillaries():
         val = int(req_data['value'])
 
         home_finger()
+
+        range_log = []
+        while len(range_log) < 50:
+            range_log.append(sensors.get_range())
+            time.sleep(0.01)
+        ave_rng = sum(range_log) / len(range_log)
+        z_max = min(math.ceil(1 + ave_rng / 10), 10)
+
         grbl_control.stepSize = 0.1
 
         print("Focusing.")
         scores = deque([0]*5)
         prev_mean = mean(scores)
-        while grbl_control.zPos < 10:
+        focus_found = False
+        while grbl_control.zPos < z_max:
             grbl_control.jog_step(0, 0, 1)
             scores.pop()
             scores.appendleft(DETECTOR.check_focus(outputFrame))
             current_mean = mean(scores)
             if (current_mean < prev_mean * 0.8):
+                focus_found = True
                 break
             prev_mean = current_mean
+
+        if not focus_found:
+            res = "Could not find focus"
+            return res
 
         print("Finding rough position of capillaries.")
         caps_found = False
