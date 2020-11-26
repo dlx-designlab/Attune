@@ -1,5 +1,6 @@
 import serial
 import time
+import re
 
 class GrblControl:
 
@@ -8,6 +9,9 @@ class GrblControl:
         self.xPos = 0
         self.yPos = 0
         self.zPos = 0
+        self.xLimit = 0
+        self.yLimit = 0
+        self.zLimit = 0
         self.focus = 0
         self.stepSize = def_step_size
         self.feedRate = def_feed_rate
@@ -29,6 +33,7 @@ class GrblControl:
         print(f"Sending: {grbl_cmd}")
         # Send g-code block to grbl
         self.grbl_ser.write((grbl_cmd + '\n').encode())
+        time.sleep(0.1)
         # Wait for grbl response with carriage return
         grbl_out_string = ((self.grbl_ser.readline()).strip()).decode("utf-8")
         print(f"got response: {grbl_out_string.strip()}")
@@ -86,8 +91,30 @@ class GrblControl:
         self.yPos = 0
         self.zPos = 0
 
-        # print("Moving to start position...")
-        # the_cmd = f'G0 X{self.xPos} Y{self.yPos} Z{self.zPos}'
-        # self.send_grbl_cmd(the_cmd)
-
         print("Homing Done!")
+
+
+    # Get the XYZ axis mition limits from GRBL.
+    def update_motion_limits(self):
+        
+        self.run_home_cycle()
+
+        print("Checkig GRBL XYZ motion limits...")
+        res = self.send_grbl_cmd('?')
+
+        mpos = re.search('MPos:(.+?)\|', res)
+        if mpos:
+            mpos = mpos.group(1)
+
+            val = mpos.split(",")
+
+            self.xLimit = abs(float(val[0]))
+            self.yLimit = abs(float(val[1]))
+            self.zLimit = abs(float(val[2]))
+
+            print(f"Max X: {self.xLimit}")
+            print(f"Max Y: {self.yLimit}")
+            print(f"Max Z: {self.zLimit}")
+
+        else:
+            print("could not get motion limits")

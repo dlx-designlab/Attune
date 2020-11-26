@@ -40,7 +40,7 @@ import pycuda.driver as cuda
 
 from utils.yolo_with_plugins import TrtYOLO
 cuda_ctx = cuda.Device(0).make_context()
-trt_yolo = TrtYOLO('yolov4-tiny-custom-416', (416, 416), 1, cuda_ctx)
+# trt_yolo = TrtYOLO('yolov4-tiny-capillary-apex-detector-416-jetson-xavier-nx', (416, 416), 1, cuda_ctx)
 
 # initialize a flask object
 APP = Flask(__name__)
@@ -198,7 +198,6 @@ def home_finger():
         grbl_control.jog_to_pos(FINGER_HOME_POS["x_pos"], grbl_control.yPos, grbl_control.zPos)
         grbl_control.jog_to_pos(grbl_control.xPos, FINGER_HOME_POS["y_pos"], grbl_control.zPos)
         grbl_control.jog_to_pos(grbl_control.xPos, grbl_control.yPos, range_measure_z_pos)
-        grbl_control.stepSize = 0.2
         time.sleep(1.5)
         
         res = f"Finger Home! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG: { sensors.get_range() } TMP: {sensors.get_temp()}"
@@ -226,12 +225,11 @@ def find_capillaries():
         ave_rng = sum(range_log) / len(range_log)
         z_max = min(math.ceil(1 + ave_rng / 10), 10)
 
-        grbl_control.stepSize = 0.1
-
-        print("Focusing.")
+        print("Focusing...")
         scores = deque([0]*5)
         prev_mean = mean(scores)
         focus_found = False
+        grbl_control.stepSize = 0.1
         while grbl_control.zPos < z_max:
             grbl_control.jog_step(0, 0, 1)
             scores.pop()
@@ -243,15 +241,14 @@ def find_capillaries():
             prev_mean = current_mean
 
         if not focus_found:
-            res = "Could not find focus"
+            res = "Could not focus"
             return res
 
         print("Finding rough position of capillaries.")
         caps_found = False
         grbl_control.stepSize = 0.5
-
         time.sleep(0.5)
-        while grbl_control.yPos < 12:
+        while grbl_control.yPos < grbl_control.xLimit - 2:
             # Take a large step along the y axis then 4 smaller steps along the z axis.
             grbl_control.jog_step(0, 3, -4)
             time.sleep(0.5)
@@ -259,24 +256,28 @@ def find_capillaries():
             if len(boxes) > 2:
                 caps_found = True
                 break
+            
             grbl_control.jog_step(0, 0, 1)
             time.sleep(0.2)
             boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
             if len(boxes) > 2:
                 caps_found = True
                 break
+            
             grbl_control.jog_step(0, 0, 1)
             time.sleep(0.2)
             boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
             if len(boxes) > 2:
                 caps_found = True
                 break
+            
             grbl_control.jog_step(0, 0, 1)
             time.sleep(0.2)
             boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
             if len(boxes) > 2:
                 caps_found = True
                 break
+            
             grbl_control.jog_step(0, 0, 1)
             time.sleep(0.2)
             boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
@@ -387,7 +388,7 @@ def save_image_panorma():
             
             x_pos += PANORAMA_SIZE["step"]
             grbl_control.jog_to_pos(x_pos, y_pos, z_pos)
-            time.sleep(0.5)
+            time.sleep(0.2)
         
         out = make_file_name(request.get_json(), "", pan_pos="stitched")
         system(f"nona -o {out} -m PNG template.pto {' '.join(filenames[-8:])}")
@@ -729,10 +730,14 @@ print(f"G-Scope device id is: {scopeDeviceId}")
 # Connect to the scope...
 init_scope()
 
+# Load ApexDetection Model
+print("Loading capillary apex cetection model...")
+trt_yolo = TrtYOLO(UVC_SETTINGS["apex_detection_model"], (416, 416), 1, cuda_ctx)
+
 # Connect to GRBL Positioning Controller and sensors
 if (UVC_SETTINGS["robo_scope_mode"]):
     grbl_control = GrblControl(UVC_SETTINGS["grbl_controller_address"], UVC_SETTINGS["default_step_size"], UVC_SETTINGS["default_feed_rate"])
-    grbl_control.run_home_cycle()
+    grbl_control.update_motion_limits()
     sensors = SensorsFeed()
 else:
     print("*** Roboscope Mode Disabled ***")
