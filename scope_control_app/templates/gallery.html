@@ -17,6 +17,7 @@
     <link rel="icon" href="{{ url_for('static', filename='img/icon-96.png') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/font_awesome.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/jquery-confirm.min.css') }}">
 
 <!--      <link rel="manifest" href="../static/manifest.json"> -->
 <!--     <link rel="stylesheet" type="text/css" href="../static/css/style.css"> -->
@@ -39,7 +40,7 @@
   <div>
     <a href="/"><button class="fas fa-chevron-left"></button></a>
     <a href="/download_gallery"><button class="">Download All</button></a>
-    <a href="/backup_gallery"><button class="">Backup to USB</button></a>
+    <button class="" onclick="backup_to_usb(0)">Backup to USB</button>
   </div>
 
   {% for image in images %}
@@ -65,6 +66,38 @@
 <!-- JS SCRIPTS -->
 <!-- <script src="../static/scripts/jquery.min.js"></script> -->
 <script src="{{ url_for('static', filename='scripts/jquery.min.js') }}"></script>
+<script src="{{ url_for('static', filename='scripts/jquery-confirm.min.js') }}"></script>
+
+<script>
+    function backup_to_usb(val) {
+      console.log('Backing up to USB');
+      $.ajax({
+          type: 'POST',
+          url: "/backup_gallery",
+          contentType: 'application/json;charset=UTF-8',
+          data: JSON.stringify({'value': val}),
+          success: function(result) {
+            $.alert({
+              title: 'USB Drive Backup',
+              // icon: 'fas fa-exclamation-circle',
+              content: result,
+              useBootstrap: false,
+              theme: 'modern'
+            });
+          },
+          error: function(result) {
+            $.alert({
+              title: 'Oops!',
+              content: result,
+              useBootstrap: false,
+              theme: 'modern'
+            });
+          }
+      });
+      
+    }
+
+</script>
 
 </body>
 </html>

@@ -24,7 +24,7 @@
 "grbl_controller_address": "/dev/ttyUSB0",
 "default_step_size": 0.2,
 "default_feed_rate": 1000,
-"fnger_home_pos": {"x_pos": 7, "y_pos": 4, "scope_min_dist": 24},
+"fnger_home_pos": {"x_pos": 6, "y_pos": 4, "z_pos": 1, "scope_min_dist": 24},
 "panorama_size": {"width": 4, "height": 0.5, "step": 0.5},
-"apex_detection_model": "yolov4-tiny-capillary-apex-detector-416-jetson-xavier-nx"
+"apex_detection_model": "yolov4-tiny-capillary-apex-detector-416-jetson-nano"
 }

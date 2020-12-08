@@ -192,14 +192,14 @@ def home_finger():
     if request.method == 'POST' and request.is_json:
         req_data = request.get_json()
         val = int(req_data['value'])
-        range_measure_z_pos = 1 # from which Z-postion to take range measurement
+        # range_measure_z_pos = 1 # from which Z-postion to take range measurement
 
         # Move scope to a rough, pre-scan starting position
         grbl_control.jog_to_pos(FINGER_HOME_POS["x_pos"], grbl_control.yPos, grbl_control.zPos)
         grbl_control.jog_to_pos(grbl_control.xPos, FINGER_HOME_POS["y_pos"], grbl_control.zPos)
-        grbl_control.jog_to_pos(grbl_control.xPos, grbl_control.yPos, range_measure_z_pos)
+        grbl_control.jog_to_pos(grbl_control.xPos, grbl_control.yPos, FINGER_HOME_POS["z_pos"])
         time.sleep(1.5)
-        
+
         res = f"Finger Home! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos} • RNG: { sensors.get_range() } TMP: {sensors.get_temp()}"
     
     else:
@@ -218,18 +218,24 @@ def find_capillaries():
 
         home_finger()
 
+        # check finger size using the TOF sensor
         range_log = []
         while len(range_log) < 50:
-            range_log.append(sensors.get_range())
+            rng = sensors.get_range()
+            if rng < 100: # Filetr sensror errors
+                range_log.append(rng)
             time.sleep(0.01)
         ave_rng = sum(range_log) / len(range_log)
-        z_max = min(math.ceil(1 + ave_rng / 10), 10)
+        
+        # calculate the lowest possible Z-axis position based on the finger size
+        z_max = math.ceil(ave_rng - grbl_control.min_rng + grbl_control.zPos)
+        # print(z_max)
 
         print("Focusing...")
         scores = deque([0]*5)
         prev_mean = mean(scores)
         focus_found = False
-        grbl_control.stepSize = 0.1
+        grbl_control.stepSize = 0.2
         while grbl_control.zPos < z_max:
             grbl_control.jog_step(0, 0, 1)
             scores.pop()
@@ -248,7 +254,7 @@ def find_capillaries():
         caps_found = False
         grbl_control.stepSize = 0.5
         time.sleep(0.5)
-        while grbl_control.yPos < grbl_control.xLimit - 2:
+        while grbl_control.yPos < grbl_control.yLimit - 1:
             # Take a large step along the y axis then 4 smaller steps along the z axis.
             grbl_control.jog_step(0, 3, -4)
             time.sleep(0.5)
@@ -294,7 +300,7 @@ def find_capillaries():
         time.sleep(0.5)
         grbl_control.stepSize = 0.2
 
-        while grbl_control.yPos < 12:
+        while grbl_control.yPos < grbl_control.yLimit - 1:
             grbl_control.jog_step(0, 1, 0)
             time.sleep(0.1)
             boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
@@ -478,14 +484,14 @@ def download_gallery():
         return str(exception)
 
 
-@APP.route("/backup_gallery")
+@APP.route("/backup_gallery", methods=['POST'])
 def backup_gallery():
     cookies = request.cookies
     uid = cookies.get("scan_uuid")
 
     try:
-        FILE_MNGR.copy_to_usb(uid)
-        return f"USB backup complete for user: {uid}"
+        usb_backup_response = FILE_MNGR.copy_to_usb(uid)
+        return usb_backup_response
     except Exception as exception:
         return str(exception)
 
@@ -731,14 +737,15 @@ print(f"G-Scope device id is: {scopeDeviceId}")
 init_scope()
 
 # Load ApexDetection Model
-print("Loading capillary apex cetection model...")
+print("Loading capillary apex detection model...")
 trt_yolo = TrtYOLO(UVC_SETTINGS["apex_detection_model"], (416, 416), 1, cuda_ctx)
 
 # Connect to GRBL Positioning Controller and sensors
 if (UVC_SETTINGS["robo_scope_mode"]):
+    sensors = SensorsFeed()
     grbl_control = GrblControl(UVC_SETTINGS["grbl_controller_address"], UVC_SETTINGS["default_step_size"], UVC_SETTINGS["default_feed_rate"])
     grbl_control.update_motion_limits()
-    sensors = SensorsFeed()
+    grbl_control.min_rng = FINGER_HOME_POS["scope_min_dist"]
 else:
     print("*** Roboscope Mode Disabled ***")
 
