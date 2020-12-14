@@ -3,7 +3,7 @@ from sensors import SensorsFeed
 import time
 
 # log time in seconds
-log_duration = 360
+log_duration = 5
 # samples per mesurements (to average)
 rng_samples = 20
 

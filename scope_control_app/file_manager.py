@@ -1,4 +1,6 @@
 """ All file management related functions """
+""" Make ure to configure USB drives mounting settings in /etc/fstab """
+""" See Wik i for more info: https://github.com/dlx-designlab/Attune/wiki/Nvidia-Jetson-Guide """
 import os
 import psutil
 from distutils import dir_util
@@ -31,7 +33,7 @@ class FileManager:
             res = f"USB backup complete for user: {uid}"
             
         else:
-            res = "No USB Drives found!"
+            res = "No USB drives found!"
 
         print(res)
         return(res)
@@ -41,7 +43,8 @@ class FileManager:
         values = []
         disk_partitions = psutil.disk_partitions(all=False)
         for partition in disk_partitions:
-            if "/media" in partition.mountpoint:
+            # make ure to configure USB drives mounting settings in /etc/fstab 
+            if "/usb" in partition.mountpoint:
                 values.append(partition.mountpoint)
         
         return values 
@@ -50,5 +53,5 @@ class FileManager:
 # if __name__ == "__main__":
 
 #     f_mngr = FileManager()
-#     f_mngr.copy_to_usb("AEB383")
+#     f_mngr.copy_to_usb("FCB89A")
     

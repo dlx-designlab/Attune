@@ -176,19 +176,26 @@
   </div>
 
   <div class="uid w3-display-bottomleft">
-    <p>
-    <label for="uuid">UID:</label>
-    <select name="uuid" id="uuids_list_box" onchange="updateUUID()">
-        <option value="{{ userId }}" selected>{{ userId }}</option>
-          
-        <!-- list all existing users on the device server-->
-        {% for uuid in existingUsers %}
-            {% if uuid != userId %}
-                <option value="{{ uuid }}">{{ uuid }}</option>
-            {% endif %}
-        {%endfor%}
+    <p class="uid-list-tab" id="uuidListTabContainer">
+        <label for="uuid">UID:</label>
+        <select name="uuid" id="uuids_list_box" onchange="updateUUID()">
+            <option value="{{ userId }}" selected>{{ userId }}</option>
+            
+            <!-- list all existing users on the device server-->
+            {% for uuid in existingUsers %}
+                {% if uuid != userId %}
+                    <option value="{{ uuid }}">{{ uuid }}</option>
+                {% endif %}
+            {%endfor%}
 
-    </select>
+        </select>
+        <button class="uuid-bar-button fas fa-plus fa-xs" id="new-uid-btn" onclick="addNewUUID()"></button>
+    </p>
+
+    <p class="uid-create-tab"  id="uuidCreateTabContainer">
+        <span>Create new UID?</span> 
+        <button class="uuid-bar-button fas fa-check fa-xs" id="new-uid-btn" onclick="addNewUUIDConfirm()"></button>        
+        <button class="uuid-bar-button fas fa-times fa-xs" id="new-uid-btn" onclick="addNewUUIDCancel()"></button>                
     </p>
       <!-- <button id="uuidBtn" class="uuid-btn fas fa-sync-alt fa-xs"></button> -->
   </div>
@@ -204,7 +211,6 @@
 <!-- JS SCRIPTS -->
 <!-- <script src="../static/scripts/jquery.min.js"></script> -->
 <script src="{{ url_for('static', filename='scripts/jquery.min.js') }}"></script>
-
 <script>
     // a PYUVC workaround >> re-adjust scope settings + focus when app loads 
     document.addEventListener('DOMContentLoaded', (event) => {
@@ -476,18 +482,44 @@
       leftBtnsPanel.style.display="none";
     }
 
-
     motionCtlBtn.onclick = function() {
         motionCtlPopup.style.display = "block";
         leftBtnsPanel.style.display="none";
     }
 
 
+    // UUID Manager
     function updateUUID(){
         var uuidsListBoxVal = document.getElementById('uuids_list_box').value;
         console.log(uuidsListBoxVal)
         document.cookie = "scan_uuid=" + uuidsListBoxVal + ";max-age=" + 90*24*60*60 + ";";
     }
+
+    function addNewUUID(){
+        var UuidListTab = document.getElementById("uuidListTabContainer");
+        var UuidCreateTab = document.getElementById("uuidCreateTabContainer");
+
+        UuidListTab.style.display = "none";
+        UuidCreateTab.style.display = "block";
+        console.log("Create new UUID Button Pressed");
+    }
+
+    function addNewUUIDConfirm(){
+        var UuidListTab = document.getElementById("uuidListTabContainer");
+        var UuidCreateTab = document.getElementById("uuidCreateTabContainer");
+
+        UuidCreateTab.style.display = "none";
+        UuidListTab.style.display = "block";
+        console.log("Creating new UUID");
+    }
+
+    function addNewUUIDCancel(){
+        var UuidListTab = document.getElementById("uuidListTabContainer");
+        var UuidCreateTab = document.getElementById("uuidCreateTabContainer");
+        UuidCreateTab.style.display = "none";
+        UuidListTab.style.display = "block";
+        console.log("Create new UUID Canceled");
+    }    
 
     // uuidBtn.onclick = function() {
     

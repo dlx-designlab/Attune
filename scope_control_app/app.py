@@ -736,16 +736,18 @@ print(f"G-Scope device id is: {scopeDeviceId}")
 # Connect to the scope...
 init_scope()
 
-# Load ApexDetection Model
-print("Loading capillary apex detection model...")
-trt_yolo = TrtYOLO(UVC_SETTINGS["apex_detection_model"], (416, 416), 1, cuda_ctx)
-
-# Connect to GRBL Positioning Controller and sensors
+# Load ApexDetection Model, Connect to GRBL Positioning Controller and Sensors
 if (UVC_SETTINGS["robo_scope_mode"]):
+    
+    print("Loading capillary apex detection model...")
+    trt_yolo = TrtYOLO(UVC_SETTINGS["apex_detection_model"], (416, 416), 1, cuda_ctx)
+    
     sensors = SensorsFeed()
+
     grbl_control = GrblControl(UVC_SETTINGS["grbl_controller_address"], UVC_SETTINGS["default_step_size"], UVC_SETTINGS["default_feed_rate"])
     grbl_control.update_motion_limits()
     grbl_control.min_rng = FINGER_HOME_POS["scope_min_dist"]
+
 else:
     print("*** Roboscope Mode Disabled ***")
 
