@@ -12,7 +12,7 @@ class SensorsFeed:
         # print("connecting to temperature senseor...")
         # self.tmp_sensor = adafruit_mlx90614.MLX90614(self.i2c)
         
-        print("connectig to range sensor...")
+        print("connecting to range sensor...")
         self.rng_sensor = adafruit_vl6180x.VL6180X(self.i2c)
 
         print("Sensors online!")

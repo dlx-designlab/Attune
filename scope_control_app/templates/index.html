@@ -505,6 +505,25 @@
     }
 
     function addNewUUIDConfirm(){
+        $.ajax({
+          type: 'GET',
+          url:  "/generate_uid",
+          contentType: 'application/json;charset=UTF-8',
+          success: function(result) {
+                // add the new UID to the dropdown list box and update user cookie
+                var uuidsListBox = document.getElementById('uuids_list_box');
+                var opt = document.createElement('option');        
+                opt.appendChild(document.createTextNode(result));
+                opt.value = result; 
+                uuidsListBox.appendChild(opt);                         
+                uuidsListBox.value=result;
+                document.cookie = "scan_uuid=" + uuidsListBox.value + ";max-age=" + 90*24*60*60 + ";";
+          },
+          error: function(result) {
+                document.getElementById("status").innerHTML = "ERROR!";
+          }
+        });
+
         var UuidListTab = document.getElementById("uuidListTabContainer");
         var UuidCreateTab = document.getElementById("uuidCreateTabContainer");
 

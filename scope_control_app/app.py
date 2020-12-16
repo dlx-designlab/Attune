@@ -77,9 +77,9 @@ def index():
     uuids_folder = "static/captured_pics/"
     users_dir_list = [f for f in listdir(uuids_folder) if isdir(join(uuids_folder, f))]
 
+    # Check for existing cookie with UID. Make a new one if doesnt exist
     cookies = request.cookies
 
-    # Check for existing cookie with UID. Make a new one if doesnt exist
     if cookies.get("scan_uuid"):
         uid = cookies.get("scan_uuid")
         res = make_response(render_template("index.html", 
@@ -91,9 +91,7 @@ def index():
                                             step_size = UVC_SETTINGS["default_step_size"],
                                             feed_rate = UVC_SETTINGS["default_feed_rate"]))
     else:
-        # Generate a random UID 6 characters long
-        uid = uuid.uuid4().hex
-        uid = uid.upper()[0:6]
+        uid = generate_uuid()
         res = make_response(render_template("index.html", 
                                             scopeSettings=controls_dict, 
                                             userId=uid, 
@@ -116,11 +114,19 @@ def index():
     # return the rendered template
     return res
 
+
 # @APP.route('/get_uuids_list', methods=['GET'])
 # def get_uuids_list():
 #     uuids_folder = "static/captured_pics/"
 #     dir_list = [f for f in listdir(uuids_folder) if isdir(join(uuids_folder, f))]
 #     return  ",".join(dir_list)
+@APP.route('/generate_uid', methods=['GET'])
+def generate_uuid():
+    # Generate a random UID 6 characters long
+    uid = (uuid.uuid4().hex).upper()[0:6]
+    
+    print(f"Generted new UUID: {uid}")
+    return uid
 
 
 @APP.route('/set_control', methods=['POST'])

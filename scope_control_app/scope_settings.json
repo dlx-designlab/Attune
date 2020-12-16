@@ -20,7 +20,7 @@
 "Auto Exposure Mode": 1,
 "Absolute Exposure Time": 365,
 "setting_available": true,
-"robo_scope_mode": true,
+"robo_scope_mode": false,
 "grbl_controller_address": "/dev/ttyUSB0",
 "default_step_size": 0.2,
 "default_feed_rate": 1000,
