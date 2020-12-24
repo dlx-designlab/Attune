@@ -605,6 +605,11 @@ def capture_frame():
             frame = cap.get_frame_robust()
             with lock:
                 outputFrame = frame
+            
+            # print the number of capillaties deected in the frame
+            boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
+            if (len(boxes > 0)):
+                print(len(boxes))          
 
         else:
             time.sleep(0.5)

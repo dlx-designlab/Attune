@@ -20,11 +20,11 @@
 "Auto Exposure Mode": 1,
 "Absolute Exposure Time": 365,
 "setting_available": true,
-"robo_scope_mode": false,
+"robo_scope_mode": true,
 "grbl_controller_address": "/dev/ttyUSB0",
 "default_step_size": 0.2,
 "default_feed_rate": 1000,
-"fnger_home_pos": {"x_pos": 6, "y_pos": 4, "z_pos": 1, "scope_min_dist": 24},
+"fnger_home_pos": {"x_pos": 8, "y_pos": 4, "z_pos": 1, "scope_min_dist": 20},
 "panorama_size": {"width": 4, "height": 0.5, "step": 0.5},
 "apex_detection_model": "yolov4-tiny-capillary-apex-detector-416-jetson-xavier-nx"
 }
