@@ -58,15 +58,13 @@ CAP_FPS = 20
 # the FPS at whiche the videos is streamed to the browser
 STREAM_FPS = 12
 UVC_SETTINGS = None
-# In Seconds, How often to reset the G-Scope to avoid crashing (PYUVC clock correction workaround)
-SCOPE_RESET_FREQ = 90
-SCOPE_RESET_REQUIRED = False
+# Used as a state to break running commands during reset
+SCOPE_RESET = False
 # Panorama dementions in mm - Width, Height, step size
 PANORAMA_SIZE =  {"width": 3.5, "height": 2, "step": 0.5}
 FINGER_HOME_POS =  {"x_pos": 6, "y_pos": 4, "scope_min_dist": 20}
 
 DETECTOR = CapDetector()
-
 FILE_MNGR = FileManager()
 
 
@@ -166,12 +164,15 @@ def set_ctrl():
 
 @APP.route('/grbl', methods=['POST'])
 def parse_grbl_cmd():
+    global SCOPE_RESET
+
     if request.method == 'POST' and request.is_json:
         req_data = request.get_json()
         cmd = req_data['command']
         val = float(req_data['value'])
         
         if  cmd == 'H':
+            SCOPE_RESET = True
             grbl_control.run_home_cycle()
         elif cmd == 'STP':
             grbl_control.stepSize = val
@@ -216,8 +217,11 @@ def home_finger():
 
 @APP.route('/find_caps', methods=['POST'])
 def find_capillaries():
-    global FOCUS, DETECTOR, FINGER_HOME_POS, outputFrame, controls_dict, trt_yolo
+    global FOCUS, DETECTOR, SCOPE_RESET, outputFrame, controls_dict, trt_yolo
     
+    # TODO: Make better reset cycle
+    SCOPE_RESET = False
+
     if request.method == 'POST' and request.is_json:
         req_data = request.get_json()
         val = int(req_data['value'])
@@ -242,7 +246,7 @@ def find_capillaries():
         prev_mean = mean(scores)
         focus_found = False
         grbl_control.stepSize = 0.2
-        while grbl_control.zPos < z_max:
+        while grbl_control.zPos < z_max and SCOPE_RESET == False:
             grbl_control.jog_step(0, 0, 1)
             scores.pop()
             scores.appendleft(DETECTOR.check_focus(outputFrame))
@@ -260,7 +264,7 @@ def find_capillaries():
         caps_found = False
         grbl_control.stepSize = 0.5
         time.sleep(0.5)
-        while grbl_control.yPos < grbl_control.yLimit - 1:
+        while grbl_control.yPos < grbl_control.yLimit - 1 and not SCOPE_RESET and not caps_found:
             # Take a large step along the y axis then 4 smaller steps along the z axis.
             grbl_control.jog_step(0, 3, -4)
             time.sleep(0.5)
@@ -269,34 +273,18 @@ def find_capillaries():
                 caps_found = True
                 break
             
-            grbl_control.jog_step(0, 0, 1)
-            time.sleep(0.2)
-            boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
-            if len(boxes) > 2:
-                caps_found = True
-                break
-            
-            grbl_control.jog_step(0, 0, 1)
-            time.sleep(0.2)
-            boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
-            if len(boxes) > 2:
-                caps_found = True
-                break
-            
-            grbl_control.jog_step(0, 0, 1)
-            time.sleep(0.2)
-            boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
-            if len(boxes) > 2:
-                caps_found = True
-                break
-            
-            grbl_control.jog_step(0, 0, 1)
-            time.sleep(0.2)
-            boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
-            if len(boxes) > 2:
-                caps_found = True
-                break
+            for _ in range(4):
+                grbl_control.jog_step(0, 0, 1)
+                time.sleep(0.2)
+                boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
+                if len(boxes) > 2:
+                    caps_found = True
+                    break
+                
+                if SCOPE_RESET:
+                    break
 
+                
         if not caps_found:
             res = "Could not find caps"
             return res
@@ -306,7 +294,7 @@ def find_capillaries():
         time.sleep(0.5)
         grbl_control.stepSize = 0.2
 
-        while grbl_control.yPos < grbl_control.yLimit - 1:
+        while grbl_control.yPos < grbl_control.yLimit - 1 and SCOPE_RESET == False:
             grbl_control.jog_step(0, 1, 0)
             time.sleep(0.1)
             boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
@@ -323,7 +311,7 @@ def find_capillaries():
             grbl_control.jog_step(0, 0, 1)
             time.sleep(0.1)
             boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
-            if (len(boxes) < prev_count):
+            if (len(boxes) < prev_count or SCOPE_RESET == True):
                 break
             prev_count = len(boxes)      
         
@@ -591,25 +579,19 @@ def auto_focus():
 # Captures frames in the background (in a separate thread)
 def capture_frame():
     # grab global references to the video stream, output frame, and lock variables
-    global SCOPE_RESET_REQUIRED, cap, outputFrame, lock, isCapturing
+    global cap, outputFrame, lock, isCapturing
     # cap_mode = cap.avaible_modes[UVC_SETTINGS["capture_mode"]]
     while True:
         if isCapturing:            
-            # reset scope capture setting every "SCOPE_RESET_FREQ" seconds. 
-            # A workaround to avoid PYUVC clock correction and app crashing
-            # if SCOPE_RESET_REQUIRED:
-            #         cap.frame_mode = (cap_mode[0], cap_mode[1], cap_mode[2])
-            #         SCOPE_RESET_REQUIRED = False
-
             # Grab a frame from the Scope
             frame = cap.get_frame_robust()
             with lock:
                 outputFrame = frame
             
             # print the number of capillaties deected in the frame
-            boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
-            if (len(boxes > 0)):
-                print(len(boxes))          
+            # boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
+            # if (len(boxes > 0)):
+            #     print(len(boxes))          
 
         else:
             time.sleep(0.5)
@@ -618,7 +600,7 @@ def capture_frame():
 # Generate a video feed to send to the frontend
 def generate():
     # grab global references to the output frame and lock variables
-    global SCOPE_RESET_REQUIRED, outputFrame, lock, isCapturing
+    global outputFrame, lock, isCapturing
 
     start_time = time.time()
 
@@ -630,13 +612,6 @@ def generate():
         time.sleep(1 / STREAM_FPS)
 
         with lock:
-            # reset scope capture setting every "SCOPE_RESET_FREQ" seconds.
-            # A workaround to avoid PYUVC clock correction and app crashing
-            # The actual settings reset is happening in capture_frame() to avoid crashes
-            # elapsed_time = time.time() - start_time
-            # if elapsed_time > SCOPE_RESET_FREQ:
-            #     SCOPE_RESET_REQUIRED = True
-            #     start_time = time.time()
             if isCapturing and outputFrame is None:
                 continue
 
