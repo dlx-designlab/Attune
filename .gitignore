@@ -43,8 +43,6 @@ coverage.xml
 *.pot
 # Django stuff:
 *.log
-# Mac Stuff
-*.DS_Store
 # Sphinx documentation
 docs/_build/
 # PyBuilder
