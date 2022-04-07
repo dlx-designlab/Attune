@@ -4,8 +4,10 @@
 For detailed documentation and instructions see the [WiKi](https://github.com/dlx-designlab/Attune/wiki/Scan-Sations)
 
 ## Important Notes:
-- The latest version of the control and capture software can be found under the **"scope_pi_app"** branch.
-- 
+- The latest version of the control and capture software can be found under the **"scope_pi_app"** branch
+- Plese use the "Discussions" or the "Issues" tabs to comment or ask any questions you might have
+
+
 ## About the project
 Attune is a collaborative international research and development project,
 carried out by scientists and designers, that focuses on a groundbreaking idea
