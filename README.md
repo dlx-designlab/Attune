@@ -1,57 +1,30 @@
 # Project Attune
 
-Welcome to project Attune!
+## Welcome to project Attune!
+For deatield documentation and instructions see the [WiKi](https://github.com/dlx-designlab/Attune/wiki/Scan-Sations)
+## About the project
+Attune is a collaborative international research and development project,
+carried out by scientists and designers, that focuses on a groundbreaking idea
+for the self-monitoring of personal health. The collaboration was initiated in
+February 2019, and it is based to a large extent on research in the field of
+capillaroscopy by Professor Yukiko Matsunaga and her lab.
+Attune’s long-term goal is to create an innovative, everyday health monitoring
+device that will enable people to monitor their health status on a daily basis
+through simple and non-invasive nailfold capillary observation. The Attune
+device will diagnose a person’s “wellness” status and facilitate optimum health
+behaviour, both physical and mental. The device will be highly engaging and
+rewarding to use and interact with, and this will motivate people to use it
+regularly to maintain good health.
 
-## Getting Started
+## Project collaborators
+- [Y.Matsunaga Lab](http://www.matlab.iis.u-tokyo.ac.jp/)
+- [The University of Tokyo DLX Design Lab](https://www.designlab.ac/)
+- [Y.Sato Lab](https://www.ut-vision.org/sato-lab/)
+- [Bezalel Academy of Art and Design, Jerusdalem](https://www.bezalel.ac.il/).
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+## Our Latets Prototypes
+The Jetscope:
+![Jetscope Protottype](img/device-final-assembly.JPG)
 
-* Point 1
-* Point 2
-* Point 3
-
-### Prerequisites
-
-What things you need to install the software and how to install them
-
-```
-Give examples
-```
-
-### Installing
-
-A step by step series of examples that tell you how to get a development env running
-
-Say what the step will be
-
-```
-Give the example
-```
-
-And repeat
-
-```
-until finished
-```
-
-End with an example of getting some data out of the system or using it for a little demo
-
-## Running the tests
-
-Explain how to run the automated tests for this system
-
-### Break down into end to end tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-### And coding style tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
+Alpha Version:
+![Alpha Protottype](img/Prototype-v1.JPG)

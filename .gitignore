@@ -2,8 +2,32 @@
 __pycache__/
 *.py[cod]
 *$py.class
+
 # C extensions
 *.so
+
+# Sensitive or high-churn files
+.idea/**/dataSources/
+.idea/**/dataSources.ids
+.idea/**/dataSources.local.xml
+.idea/**/sqlDataSources.xml
+.idea/**/dynamic.xml
+.idea/**/uiDesigner.xml
+.idea/**/dbnavigator.xml
+
+# User-specific stuff
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
+
+# Generated files
+.idea/**/contentModel.xml
+
+# PyBuilder
+target/
+
 # Distribution / packaging
 .Python
 env/
@@ -21,14 +45,17 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
@@ -38,22 +65,34 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *,cover
+
 # Translations
 *.mo
 *.pot
+
 # Django stuff:
 *.log
+
 # Sphinx documentation
 docs/_build/
+
 # PyBuilder
 target/
 
+# Gradle
+.idea/**/gradle.xml
+.idea/**/libraries
+
+# General
 cad_files/.DS_Store
-
 .DS_Store
-
 .idea/
-
 .vscode/
-
+.vscode
 .pylintrc
+.AppleDouble
+.LSOverride
+
+# scoPI application
+scope_control_app/pics/
+apex_detector/data/
