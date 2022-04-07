@@ -1,0 +1,8 @@
+/users/sarit/downloads/Matsunaga Lab Data/1/cas_20190226131340820.bmp
+/users/sarit/downloads/Matsunaga Lab Data/
+640
+480
+5
+1.35
+241
+0.9451795841
