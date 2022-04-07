@@ -5,5 +5,3 @@ This branch contains all hardware related files.
 - Drawings
 - Electronics
 - Assembly animations and renderings  
-
-For assembly instructions see the [WiKi](https://github.com/dlx-designlab/Attune/wiki/Scan-Sations)
