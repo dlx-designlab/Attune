@@ -1,6 +1,6 @@
-# Project Attune
+# Project Attune 🔬👆
 
-## Welcome to project Attune!
+## Welcome to project Attune
 For deatield documentation and instructions see the [WiKi](https://github.com/dlx-designlab/Attune/wiki/Scan-Sations)
 ## About the project
 Attune is a collaborative international research and development project,
