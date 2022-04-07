@@ -47,3 +47,13 @@ coverage.xml
 docs/_build/
 # PyBuilder
 target/
+
+cad_files/.DS_Store
+
+.DS_Store
+
+.idea/
+
+.vscode/
+
+.pylintrc
