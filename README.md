@@ -20,7 +20,7 @@ regularly to maintain good health.
 - [Y.Matsunaga Lab](http://www.matlab.iis.u-tokyo.ac.jp/)
 - [The University of Tokyo DLX Design Lab](https://www.designlab.ac/)
 - [Y.Sato Lab](https://www.ut-vision.org/sato-lab/)
-- [Bezalel Academy of Art and Design, Jerusdalem](https://www.bezalel.ac.il/).
+- [Bezalel Academy of Art and Design, Jerusalem](https://www.bezalel.ac.il/).
 
 ## Our Latets Prototypes
 The Jetscope:
