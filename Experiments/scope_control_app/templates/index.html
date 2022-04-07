@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scope Capture App</title>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, shrink-to-fit=no">
+    <meta name="description" content="Scope Capture App">
+    
+    <!-- iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/icon-96.png') }}">
+    
+    <!-- Chrome Web app manifest -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+
+    <link rel="icon" href="{{ url_for('static', filename='img/icon-96.png') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/font_awesome.css') }}">
+
+<!--      <link rel="manifest" href="../static/manifest.json"> -->
+<!--     <link rel="stylesheet" type="text/css" href="../static/css/style.css"> -->
+<!--     <link rel="stylesheet" type="text/css" href="../static/css/font_awesome.css"> -->
+
+<style>
+  .bgimg {
+    background-image: url('{{ url_for('video_feed') }}');
+/*    background-image: url('img.jpg');    */
+    background-color: #000;
+    min-height: 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    /*background-size: contain;*/
+    margin: 0;
+    padding: 0;
+    position:relative;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="bgimg">
+    
+    <button id="settingsBtn" class="settings-buton w3-display-left fas fa-cog fa-2x"></button>
+
+    <div id="settingsPanel" class="settings-panel w3-display-left">
+        
+        <span class="close-settings-panel">&times;</span>
+
+        <h2>Settings:</h2>
+        <div>
+            <span class="setting-title">White Balance: </span>
+            <input type="range" min="2300" max="6600" value="{{ scopeSettings['White Balance temperature'].value }}" class="slider" id="wbSlider">
+            <span id="wbSliderVal"></span>
+        </div>
+        <div>
+            <span class="setting-title">Brightness: </span>
+            <input type="range" min="0" max="255" value="{{ scopeSettings['Brightness'].value }}" class="slider" id="brightnessSlider">
+            <span id="brightnessSliderVal"></span>
+        </div>
+        <div>
+            <span class="setting-title">Contrast: </span>
+            <input type="range" min="0" max="255" value="{{ scopeSettings['Contrast'].value }}" class="slider" id="contrastSlider">
+            <span id="contrastSliderVal"></span>
+        </div>
+        <div>
+            <span class="setting-title">Hue: </span>
+            <input type="range" min="-180" max="180" value="{{ scopeSettings['Hue'].value }}" class="slider" id="hueSlider">
+            <span id="hueSliderVal"></span>
+        </div>
+        <div>
+            <span class="setting-title">Saturation: </span>
+            <input type="range" min="0" max="255" value="{{ scopeSettings['Saturation'].value }}" class="slider" id="satSlider">
+            <span id="satSliderVal"></span>
+        </div>                   
+        <div>
+            <span class="setting-title">Gain: </span>
+            <input type="range" min="0" max="10" value="{{ scopeSettings['Gain'].value }}" class="slider" id="gainSlider">
+            <span id="gainSliderVal"></span>
+        </div>
+        <div>
+            <span class="setting-title">Gamma: </span>
+            <input type="range" min="1" max="255" value="{{ scopeSettings['Gamma'].value }}" class="slider" id="gammaSlider">
+            <span id="gammaSliderVal"></span>
+        </div>
+        <div>
+            <span class="setting-title">Backlight Comp: </span>
+            <input type="range" min="0" max="8" value="{{ scopeSettings['Backlight Compensation'].value }}" class="slider" id="blcSlider">
+            <span id="blcSliderVal"></span>
+        </div>
+    
+      <p class="status" id="status"> status...</p>
+
+    </div>
+
+  <div class="focus-control-buttons-panel w3-display-right">
+      <button class="focus-control-button fas fa-plus fa-2x" onclick="set_scope_control('Absolute Focus', 1)"> </button>
+      <button class="focus-control-button fas fa-bullseye fa-2x" onclick="set_scope_control('Auto Focus', 1)"> </button>
+      <button class="focus-control-button fas fa-minus fa-2x" onclick="set_scope_control('Absolute Focus', -1)"> </button>
+  </div>
+
+  <div class="w3-display-bottommiddle">
+      <button class="record-button fas fa-camera fa-2x"  onclick="save_scope_image()"></button>
+  </div>
+
+  <div class="uid w3-display-bottomleft">
+      <p>UID: {{ userId }}</p>
+  </div>
+<!-- 
+    <div class="video-feed">
+        <img src="{{ url_for('video_feed') }}">
+    </div>
+ -->
+
+</div>
+
+
+<!-- JS SCRIPTS -->
+<!-- <script src="../static/scripts/jquery.min.js"></script> -->
+<script src="{{ url_for('static', filename='scripts/jquery.min.js') }}"></script>
+
+<script>
+
+    // Update sliders values and send to scope
+    var sliders = document.querySelectorAll('.slider')
+    sliders.forEach(item => {
+        
+        var labelId = item.id + "Val"
+        var label = document.getElementById(labelId);
+        label.innerHTML = item.value
+
+        // Update sliders labels 
+        item.oninput = function(){
+            label.innerHTML = this.value
+        }
+
+        // Update actual scope setting with selected slider value
+        item.onchange = function() {
+            var controlId = this.id
+            switch(controlId){
+                case "wbSlider":
+                    console.log("White Balance temperature:" + this.value);
+                    set_scope_control('White Balance temperature', this.value)
+                    break;
+                case "brightnessSlider":
+                    console.log("Brightness:" + this.value);
+                    set_scope_control('Brightness', this.value)
+                    break;
+                case "contrastSlider":
+                    console.log("Contrast:" + this.value);
+                    set_scope_control('Contrast', this.value)
+                    break;
+                case "hueSlider":
+                    console.log("Hue:" + this.value);
+                    set_scope_control('Hue', this.value)
+                    break;
+                case "satSlider":
+                    console.log("Saturation:" + this.value);
+                    set_scope_control('Saturation', this.value)
+                    break;
+                case "gainSlider":
+                    console.log("Gain:" + this.value);
+                    set_scope_control('Gain', this.value)
+                    break;
+                case "gammaSlider":
+                    console.log("Gamma:" + this.value);
+                    set_scope_control('Gamma', this.value)
+                    break;
+                case "blcSlider":
+                    console.log("Backlight Compensation:" + this.value);
+                    set_scope_control('Backlight Compensation', this.value)
+                    break;
+            }
+        }
+    });
+
+    // Set Scope Controls values function
+    function set_scope_control(ctl, val) {
+
+      $.ajax({
+          type: 'POST',
+          url: "/set_control",
+          contentType: 'application/json;charset=UTF-8',
+          data: JSON.stringify({'control': ctl, 'value': val}),
+          success: function(result) {
+                document.getElementById("status").innerHTML = result;
+          },
+          error: function(result) {
+                document.getElementById("status").innerHTML = "ERROR!";
+          }
+      });
+
+    };
+
+    // Capture Scope image
+    function save_scope_image(){
+      $.ajax({
+          type: 'POST',
+          url: "/save_image",
+          contentType: 'application/json;charset=UTF-8',
+          success: function(result) {
+                document.getElementById("status").innerHTML = result;
+          },
+          error: function(result) {
+                document.getElementById("status").innerHTML = "ERROR!";
+          }
+      });
+    }
+
+
+    // Settings Panel Popup Control
+    var settingsPopup = document.getElementById("settingsPanel");
+    var settingsBtn = document.getElementById("settingsBtn");
+    var span = document.getElementsByClassName("close-settings-panel")[0];
+
+    settingsBtn.onclick = function() {
+      settingsPopup.style.display = "block";
+      settingsBtn.style.display="none";
+    }
+    span.onclick = function() {
+      settingsPopup.style.display = "none";
+      settingsBtn.style.display = "block";
+    }
+    // window.onclick = function(event) {
+    //   if (event.target == modal) {
+    //     modal.style.display = "none";
+    //   }
+    // }    
+
+</script>
+
+</body>
+</html>
