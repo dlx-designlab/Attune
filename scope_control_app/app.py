@@ -17,6 +17,7 @@ from statistics import mean
 # import argparse
 # import keyboard
 import cv2
+import csv 
 
 # Camera UVC Properties control library
 import uvc  # >> https://github.com/pupil-labs/pyuvc
@@ -326,16 +327,47 @@ def find_capillaries():
 # Save an image file to the server
 @APP.route('/save_image', methods=['POST'])
 def save_image():
+    global trt_yolo 
 
     if isCapturing:
-        filename = make_file_name(request.get_json(), "png")
+        filename = make_file_name(request.get_json(), ".png")
         print(f"saving img file: {filename}")
         # Convert BGR to RGB and save the image
         # im_rgb = outputFrame.bgr[:, :, [2, 1, 0]]
         # Image.fromarray(im_rgb).save(filename)
         with lock:
+            boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.05)
             cv2.imwrite(filename, outputFrame.bgr)
-            
+            csv_row = []
+
+            if len( boxes ) > 0 : 
+                # check apex brighness
+                prominance_sum = 0                
+                for box in boxes: 
+                    # check the meanStdDeviation of the detected apex to estimate apex prominance
+                    cap_box = cv2.medianBlur(outputFrame.bgr[box[1]:box[3], box[0]:box[2], 1], 5)
+                    mean, std = cv2.meanStdDev(cap_box)
+                    prominance_sum += std
+                    print(f"m:{mean} s:{std}")
+
+                    c_point = ( int((box[0]+box[2]) / 2), int((box[1]+box[3]) / 2) )
+                    csv_row += c_point
+                
+                avg_prominance = int(prominance_sum / len(boxes))
+                csv_row.append(f"ap_{avg_prominance}")
+
+                # open the file in the write mode
+                cookies = request.cookies 
+                uuid = cookies.get("scan_uuid")
+                csv_path = f"static/captured_pics/{uuid}/{uuid}.csv"
+                print(f"writing {csv_path}")
+                print(f"data: {csv_row}")
+                
+                with open(csv_path, 'a') as f:
+                    # create the csv writer
+                    writer = csv.writer(f)
+                    writer.writerow(csv_row)
+        
         # Save metadata txt file
         save_metadata(filename)
 
@@ -353,7 +385,7 @@ def save_image():
 @APP.route('/save_image_panorama', methods=['POST'])
 def save_image_panorma():
 
-    global PANORAMA_SIZE    
+    global PANORAMA_SIZE , trt_yolo 
     print(f"Capturing Panorama: {PANORAMA_SIZE}")
 
     # Move to start point - the top right corner of the panorama
@@ -376,12 +408,41 @@ def save_image_panorma():
     if isCapturing:
         while x_pos <= start_x + PANORAMA_SIZE["width"]:            
             # take a picture
-            filename = make_file_name(request.get_json(), "png", pan_pos=f"{int(x_pos*10)}x{int(y_pos*10)}")
+            filename = make_file_name(request.get_json(), ".png", pan_pos=f"{int(x_pos*10)}x{int(y_pos*10)}")
             filenames.append(filename)
             print(f"saving img file: {filename}")
             with lock:
+                boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.05)
                 cv2.imwrite(filename, outputFrame.bgr)
-                res = "file saved!"
+                csv_row = []
+
+                if len( boxes ) > 0 : 
+                    # check apex brighness
+                    prominance_sum = 0                
+                    for box in boxes: 
+                        # check the meanStdDeviation of the detected apex to estimate apex prominance
+                        cap_box = cv2.medianBlur(outputFrame.bgr[box[1]:box[3], box[0]:box[2], 1], 5)
+                        mean, std = cv2.meanStdDev(cap_box)
+                        prominance_sum += std
+                        print(f"m:{mean} s:{std}")
+
+                        c_point = ( int((box[0]+box[2]) / 2), int((box[1]+box[3]) / 2) )
+                        csv_row += c_point
+                    
+                    avg_prominance = int(prominance_sum / len(boxes))
+                    csv_row.append(f"ap_{avg_prominance}")
+
+                    # open the file in the write mode
+                    cookies = request.cookies 
+                    uuid = cookies.get("scan_uuid")
+                    csv_path = f"static/captured_pics/{uuid}/{uuid}.csv"
+                    print(f"writing {csv_path}")
+                    print(f"data: {csv_row}")
+                    
+                    with open(csv_path, 'a') as f:
+                        # create the csv writer
+                        writer = csv.writer(f)
+                        writer.writerow(csv_row)
             
             # Save metadata txt file
             save_metadata(filename)        
@@ -411,7 +472,7 @@ def save_video():
     frames_to_capture = UVC_SETTINGS["video_cap_duration"] * CAP_FPS
 
     if isCapturing:
-        filename = make_file_name(request.get_json(), "mp4")
+        filename = make_file_name(request.get_json(), ".mp4")
         print(f"saving vid file: {filename}")
 
         # Capture object setup
@@ -516,7 +577,7 @@ def make_file_name(req_data, file_ext, pan_pos = "0"):
     elif FOCUS < 10:
         foc = f"00{FOCUS}"
     
-    file_name = f"static/captured_pics/{uid}/cap_{uid}_{date_string}_f{foc}_pan{pan_pos}.{file_ext}"
+    file_name = f"static/captured_pics/{uid}/cap_{uid}_{date_string}_f{foc}_pan{pan_pos}{file_ext}"
 
     return file_name
 
