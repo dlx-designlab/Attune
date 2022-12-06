@@ -4,7 +4,7 @@ from PIL import Image
 import glob
 import csv
 
-scope_name = 'gscope17'
+scope_name = 'gscope01'
 images = []
 
 for file in glob.glob(f"Experiments/YurisTests/focus_to_pd_converter/{scope_name}/*.jpg"):
