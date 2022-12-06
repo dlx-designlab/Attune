@@ -31,6 +31,8 @@ with open(f'Experiments/YurisTests/focus_to_pd_converter/{scope_name}.csv', 'w',
         writer.writerow({'focus': focus, 'pd': pd})
 
 
+print(f"Created {scope_name}.csv")
+
 
 # get the exif data
 # # extracting the exif metadata
