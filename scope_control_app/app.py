@@ -330,14 +330,14 @@ def save_image():
     global trt_yolo 
 
     if isCapturing:
-        filename = make_file_name(request.get_json(), ".png")
+        filename = make_file_name(request.get_json(), ".jpg")
         print(f"saving img file: {filename}")
         # Convert BGR to RGB and save the image
         # im_rgb = outputFrame.bgr[:, :, [2, 1, 0]]
         # Image.fromarray(im_rgb).save(filename)
         with lock:
             boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.05)
-            cv2.imwrite(filename, outputFrame.bgr)
+            cv2.imwrite(filename, outputFrame.bgr, [cv2.IMWRITE_JPEG_QUALITY, 100])
             csv_row = []
 
             if len( boxes ) > 0 : 
@@ -369,7 +369,7 @@ def save_image():
                     writer.writerow(csv_row)
         
         # Save metadata txt file
-        save_metadata(filename)
+        save_metadata(filename, outputFrame.bgr.shape[1], outputFrame.bgr.shape[0])
 
         res = "file saved!"
 
@@ -408,12 +408,12 @@ def save_image_panorma():
     if isCapturing:
         while x_pos <= start_x + PANORAMA_SIZE["width"]:            
             # take a picture
-            filename = make_file_name(request.get_json(), ".png", pan_pos=f"{int(x_pos*10)}x{int(y_pos*10)}")
+            filename = make_file_name(request.get_json(), ".jpg", pan_pos=f"{int(x_pos*10)}x{int(y_pos*10)}")
             filenames.append(filename)
             print(f"saving img file: {filename}")
             with lock:
                 boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.05)
-                cv2.imwrite(filename, outputFrame.bgr)
+                cv2.imwrite(filename, outputFrame.bgr, [cv2.IMWRITE_JPEG_QUALITY, 100])
                 csv_row = []
 
                 if len( boxes ) > 0 : 
@@ -445,7 +445,7 @@ def save_image_panorma():
                         writer.writerow(csv_row)
             
             # Save metadata txt file
-            save_metadata(filename)        
+            save_metadata(filename, outputFrame.bgr.shape[1], outputFrame.bgr.shape[0])
             
             x_pos += PANORAMA_SIZE["step"]
             grbl_control.jog_to_pos(x_pos, y_pos, z_pos)
@@ -489,7 +489,7 @@ def save_video():
         out.release()
         
         # Save metadata txt file
-        save_metadata(filename)
+        # save_metadata(filename, UVC_SETTINGS["video_cap_w"], UVC_SETTINGS["video_cap_h"])
         
         res = "file saved!"
         
@@ -582,13 +582,27 @@ def make_file_name(req_data, file_ext, pan_pos = "0"):
     return file_name
 
 
-def save_metadata(media_file_name):
+def save_metadata(media_file_name, media_w, media_h):
     global FOCUS
     # TODO: add sensor data to captured image metadata
+    
+    current_focus = get_current_focus(FOCUS)
+    
+    # Calculate the Pixel Distance value
+    pd = current_focus * UVC_SETTINGS["PD_Calc"]["slope"] + UVC_SETTINGS["PD_Calc"]["intercept"] 
+    # Calculate the physical dimensions of the image
+    physical_im_w = media_w * pd / 1000 
+    physical_im_h = media_h * pd / 1000 
 
     metadata = pyexiv2.ImageMetadata(media_file_name)
     metadata.read()
-    metadata["Exif.Photo.UserComment"] = f"x:{grbl_control.xPos}, y:{grbl_control.yPos}, z:{grbl_control.zPos}, foc:{ get_current_focus(FOCUS) }"
+    metadata["Exif.Photo.UserComment"] = f"Magnification: 250; "\
+                                         f"Image width: {physical_im_w:.3f}mm; "\
+                                         f"Image height: {physical_im_h:.3f}mm; "\
+                                         f"Focus:{current_focus}; PD: {pd:.3f}; "\
+                                         f"x: {grbl_control.xPos}; "\
+                                         f"y: {grbl_control.yPos}; "\
+                                         f"z: {grbl_control.zPos}; "
     metadata.write()
 
 
