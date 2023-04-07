@@ -49,7 +49,7 @@ def make_graph(scope_name):
     print('Intercept:', intercept)
 
     # Plot the data
-    plt.plot(data[:, 0], data[:, 1], 'o', label='Original data', markersize=2)
+    plt.plot(data[:, 0], data[:, 1], 'o', label='Observations', markersize=2)
     plt.plot(data[:, 0], intercept + slope*data[:, 0], 'r', label='Fitted line')
     plt.legend()
     plt.show()
@@ -72,5 +72,5 @@ def make_graph(scope_name):
 
 if __name__ == '__main__':
     
-    make_csv('gscope01')
-    make_graph('gscope01')
+    make_csv('gscope14')
+    make_graph('gscope14')
