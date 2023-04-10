@@ -1,6 +1,7 @@
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
 # from PIL.ExifTags import TAGS
 
 import glob
@@ -11,10 +12,13 @@ def make_csv(scope_name):
 
     images = []
 
-    for file in glob.glob(f"Experiments/YurisTests/focus_to_pd_converter/{scope_name}/*.jpg"):
+    for file in glob.glob(f"./{scope_name}/*.jpg"):
         images.append(file)
 
-    with open(f'Experiments/YurisTests/focus_to_pd_converter/{scope_name}.csv', 'w', newline='') as csvfile:
+    # images by alphabetic order descending
+    images.sort(reverse=True)
+
+    with open(f'{scope_name}.csv', 'w', newline='') as csvfile:
         fieldnames = ['focus', 'pd']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -32,7 +36,7 @@ def make_csv(scope_name):
             # print(f"Focus: {focus}")
             # print(f"PD: {pd}")
 
-            writer.writerow({'focus': focus, 'pd': pd})
+            writer.writerow({'focus': focus, 'pd': pd})            
 
     print(f"Created {scope_name}.csv")
 
@@ -40,8 +44,17 @@ def make_csv(scope_name):
 def make_graph(scope_name):
 
     # Calculate the slope and intercept
-    # Make sure to clean up the data and remove any outliers
-    data = np.loadtxt(f'Experiments/YurisTests/focus_to_pd_converter/{scope_name}.csv', delimiter=',', skiprows=1)
+    data = np.loadtxt(f'{scope_name}.csv', delimiter=',', skiprows=1)
+    
+    # Clean up the data and remove any outliers:
+    # Check if data contains zero values
+    data = data[data[:, 1] > 0]
+    # Keep only unique values in the data (remove PD values outside the callibrated range)
+    unique, counts = np.unique(data[:, 1], return_counts=True)
+    # print(f"Unique values: {unique}, counts: {counts}")
+    data = data[np.in1d(data[:, 1], unique[counts == 1])]
+    
+    # Calculate the slope and intercept
     coefficients = np.polyfit(data[:, 0], data[:, 1], 1)
     slope = coefficients[0]                                                             
     intercept = coefficients[1]
@@ -49,6 +62,10 @@ def make_graph(scope_name):
     print('Intercept:', intercept)
 
     # Plot the data
+    print(f"Plotting {scope_name} data...")
+    plt.title(scope_name)
+    plt.xlabel('Focus')
+    plt.ylabel('PD')
     plt.plot(data[:, 0], data[:, 1], 'o', label='Observations', markersize=2)
     plt.plot(data[:, 0], intercept + slope*data[:, 0], 'r', label='Fitted line')
     plt.legend()
@@ -72,5 +89,12 @@ def make_graph(scope_name):
 
 if __name__ == '__main__':
     
-    make_csv('gscope14')
-    make_graph('gscope14')
+    #  get arguments from command line
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--scope', type=str, default='gscope01', help='Folder name which contains the Gscope images to process')
+    args = parser.parse_args()
+    
+    print(f"Processing {args.scope}")
+
+    make_csv(args.scope)
+    make_graph(args.scope)
