@@ -1,6 +1,6 @@
 {
 "capture_mode": 3,
-"stream_fps": 12,
+"stream_fps": 15,
 "video_cap_w": 1280,
 "video_cap_h": 720,
 "video_cap_duration": 5,
@@ -16,16 +16,16 @@
 "Saturation": 250,
 "Gamma": 1,
 "Gain": 0,
-"Brightness": 0,
+"Brightness": 50,
 "Auto Exposure Mode": 1,
 "Absolute Exposure Time": 365,
 "setting_available": true,
-"robo_scope_mode": true,
+"robo_scope_mode": false,
 "grbl_controller_address": "/dev/ttyUSB0",
 "default_step_size": 0.2,
 "default_feed_rate": 1000,
 "fnger_home_pos": {"x_pos": 8, "y_pos": 4, "z_pos": 1, "scope_min_dist": 20},
 "panorama_size": {"width": 4, "height": 0.5, "step": 0.5},
-"apex_detection_model": "yolov4-tiny-capillary-apex-detector-416-jetson-xavier-nx",
+"apex_detection_model": "best500apex_openvino_model",
 "PD_Calc": {"slope": -0.003267353, "intercept": 1.637155924}
 }

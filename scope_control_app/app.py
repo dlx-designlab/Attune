@@ -6,18 +6,23 @@ import threading
 import time
 import uuid
 import datetime
-import pyexiv2
+#import pyexiv2
 from collections import deque
 from os import listdir, system
 from os.path import isfile, isdir, join
 from pathlib import Path
-from pyzip import PyZip
-from pyfolder import PyFolder
+#from pyzip import PyZip
+#from pyfolder import PyFolder
 from statistics import mean
 # import argparse
 # import keyboard
 import cv2
 import csv 
+
+#Image detection model
+from ultralytics import YOLO
+import os
+import shutil
 
 # Camera UVC Properties control library
 import uvc  # >> https://github.com/pupil-labs/pyuvc
@@ -29,19 +34,19 @@ from grbl import GrblControl
 from file_manager import FileManager
 
 # Sensors feed class
-from sensors import SensorsFeed
-from cap_detector import CapDetector
+#from sensors import SensorsFeed
+#from cap_detector import CapDetector
 
 # Flask web app framework
 from flask import (Flask, Response, jsonify, make_response, redirect,
                    render_template, request, send_file, url_for)
 
-import pycuda.autoinit  # This is needed for initializing CUDA driver
-import pycuda.driver as cuda
+#import pycuda.autoinit  # This is needed for initializing CUDA driver
+#import pycuda.driver as cuda
 
-from utils.yolo_with_plugins import TrtYOLO
-cuda_ctx = cuda.Device(0).make_context()
-# trt_yolo = TrtYOLO('yolov4-tiny-capillary-apex-detector-416-jetson-xavier-nx', (416, 416), 1, cuda_ctx)
+#from utils.yolo_with_plugins import TrtYOLO
+#cuda_ctx = cuda.Device(0).make_context()
+#trt_yolo = YOLO('best500apex.pt')
 
 # initialize a flask object
 APP = Flask(__name__)
@@ -51,13 +56,14 @@ APP = Flask(__name__)
 lock = threading.Lock()
 outputFrame = None
 isCapturing = True
+seeingModel = False
 cap = None
 controls_dict = dict()
 FOCUS = 100
 # the FPS at which videos are being captured
-CAP_FPS = 20
+CAP_FPS = 30
 # the FPS at whiche the videos is streamed to the browser
-STREAM_FPS = 12
+STREAM_FPS = 30
 UVC_SETTINGS = None
 # Used as a state to break running commands during reset
 SCOPE_RESET = False
@@ -65,7 +71,7 @@ SCOPE_RESET = False
 PANORAMA_SIZE =  {"width": 3.5, "height": 2, "step": 0.5}
 FINGER_HOME_POS =  {"x_pos": 6, "y_pos": 4, "scope_min_dist": 20}
 
-DETECTOR = CapDetector()
+#DETECTOR = CapDetector()
 FILE_MNGR = FileManager()
 
 
@@ -125,8 +131,7 @@ def generate_uuid():
     uid = (uuid.uuid4().hex).upper()[0:6]
     
     print(f"Generted new UUID: {uid}")
-    return uid
-
+    return uid 
 
 @APP.route('/set_control', methods=['POST'])
 def set_ctrl():
@@ -504,6 +509,10 @@ def save_video():
 def video_feed():
     return Response(generate(), mimetype="multipart/x-mixed-replace; boundary=frame")
 
+#Video feed with model
+@APP.route("/video_feed_test")
+def video_feed_test():
+    return Response(test_model(), mimetype="multipart/x-mixed-replace; boundary=frame")
 
 # An image gallery of captured images
 @APP.route("/img_gallery")
@@ -696,6 +705,40 @@ def generate():
             yield b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + placeholder_image + b'\r\n'
 
 
+#Trying the new image detection model
+@APP.route('/test_model')
+def test_model():
+    # grab global references to the output frame and lock variables
+    global outputFrame, lock, isCapturing
+    trt_yolo=YOLO("yolo/best500apex.pt")
+    if os.path.exists("runs"):
+        shutil.rmtree("runs")
+
+    start_time = time.time()
+
+    # An image to display when the scope is off
+    placeholder_image = open("static/img/scope_off.jpg", "rb").read()
+
+    while True:
+
+        time.sleep(1 / STREAM_FPS)
+
+        with lock:
+            if isCapturing and outputFrame is None:
+                continue
+
+        if isCapturing:
+            res = trt_yolo(outputFrame.bgr, 0.3, save=False)
+            for r in res:
+                if len(r) > 2:
+                    print("Capillaries found")
+                    #yield b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + open("runs/detect/predict/image0.jpg","rb").read() + b'\r\n'
+            yield b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + bytearray(outputFrame.jpeg_buffer) + b'\r\n'
+        else:
+            yield b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + placeholder_image + b'\r\n'
+
+   
+
 # Switching between scope capture on and off
 def toggle_capture():    
     global isCapturing, cap
@@ -739,10 +782,15 @@ def init_scope():
     controls_dict = dict([(c.display_name, c) for c in cap.controls])
 
     # Capture one frame to initialize the microscope
-    print("Available Capture Modes:", cap.avaible_modes)
-    cap_mode = cap.avaible_modes[UVC_SETTINGS["capture_mode"]]
+    print("Available Capture Modes:", cap.available_modes)
+    cap_mode = cap.available_modes[UVC_SETTINGS["capture_mode"]]
+    print("CAPMODE", cap_mode)
     print("Setting Capture Mode:", cap_mode)
-    cap.frame_mode = (cap_mode[0], cap_mode[1], cap_mode[2])
+    for mode in cap.available_modes :
+        try :
+            cap.frame_mode = mode
+        except uvc.InitError as err:
+                print(f"{cap.name} mode selection - {err}")
     cap.get_frame_robust()
     time.sleep(1)
 
@@ -787,6 +835,7 @@ with open('scope_settings.json', 'r') as f:
 
 # Find the G-Scope device number within all attached devices.
 dev_list = uvc.device_list()
+print(uvc.device_list)
 scopeDeviceId = 0
 for i, device in enumerate(dev_list):
     print(f"{i}: {device['name']}")

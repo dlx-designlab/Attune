@@ -24,7 +24,7 @@
 
 <style>
   .bgimg {
-    background-image: url("{{ url_for('static', filename='img/frame-cross.png') }}"), url("{{ url_for('video_feed') }}");
+    background-image: url("{{ url_for('static', filename='img/frame-cross.png') }}"), url("{{ url_for('video_feed_test') }}");
     background-color: #000;
     min-height: 100%;
     background-repeat: no-repeat;
@@ -52,6 +52,7 @@
         {% if settingsMode == True %}
             <button id="settingsBtn" class="fas fa-cog fa-1_5x"></button>
         {% endif %}
+        <button class="fas fa-images fa-1_5x" onclick="runTestModel()"></button>
     </div>
 
     <div id="motionControlPanel" class="settings-panel w3-display-left">
@@ -309,6 +310,8 @@
         }
     });
 
+
+
     // Set Scope Controls values function
     function set_scope_control(ctl, val) {
       console.log('Adjusing ' + ctl + ' to ' + val);
@@ -493,6 +496,11 @@
         var uuidsListBoxVal = document.getElementById('uuids_list_box').value;
         console.log(uuidsListBoxVal)
         document.cookie = "scan_uuid=" + uuidsListBoxVal + ";max-age=" + 90*24*60*60 + ";";
+    }
+
+    //Testing image detection model
+    function runTestModel(){
+        
     }
 
     function addNewUUID(){
