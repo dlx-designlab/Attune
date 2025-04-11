@@ -6,13 +6,13 @@ import threading
 import time
 import uuid
 import datetime
-#import pyexiv2
+import pyexiv2
 from collections import deque
 from os import listdir, system
 from os.path import isfile, isdir, join
 from pathlib import Path
-#from pyzip import PyZip
-#from pyfolder import PyFolder
+from pyzip import PyZip
+from pyfolder import PyFolder
 from statistics import mean
 # import argparse
 # import keyboard
@@ -34,8 +34,8 @@ from grbl import GrblControl
 from file_manager import FileManager
 
 # Sensors feed class
-#from sensors import SensorsFeed
-#from cap_detector import CapDetector
+from sensors import SensorsFeed
+from cap_detector import CapDetector
 
 # Flask web app framework
 from flask import (Flask, Response, jsonify, make_response, redirect,
@@ -61,7 +61,7 @@ cap = None
 controls_dict = dict()
 FOCUS = 100
 # the FPS at which videos are being captured
-CAP_FPS = 30
+CAP_FPS = 15
 # the FPS at whiche the videos is streamed to the browser
 STREAM_FPS = 30
 UVC_SETTINGS = None
@@ -71,7 +71,7 @@ SCOPE_RESET = False
 PANORAMA_SIZE =  {"width": 3.5, "height": 2, "step": 0.5}
 FINGER_HOME_POS =  {"x_pos": 6, "y_pos": 4, "scope_min_dist": 20}
 
-#DETECTOR = CapDetector()
+DETECTOR = CapDetector()
 FILE_MNGR = FileManager()
 
 
@@ -223,7 +223,8 @@ def home_finger():
 
 @APP.route('/find_caps', methods=['POST'])
 def find_capillaries():
-    global FOCUS, DETECTOR, SCOPE_RESET, outputFrame, controls_dict, trt_yolo
+    global FOCUS, DETECTOR, SCOPE_RESET, outputFrame, controls_dict
+    trt_yolo=YOLO('yolo/best500apex_openvino_model')
     
     # TODO: Make better reset cycle
     SCOPE_RESET = False
@@ -245,7 +246,11 @@ def find_capillaries():
         
         # calculate the lowest possible Z-axis position based on the finger size
         z_max = math.ceil(ave_rng - grbl_control.min_rng + grbl_control.zPos)
-        # print(z_max)
+        # When the zmax is under five, the focus never works 
+        # NON MANDATORY CODE, CAN REMOVE 
+        if (z_max<5):
+            z_max=7
+        #print("MAX",z_max)
 
         print("Focusing...")
         scores = deque([0]*5)
@@ -274,19 +279,20 @@ def find_capillaries():
             # Take a large step along the y axis then 4 smaller steps along the z axis.
             grbl_control.jog_step(0, 3, -4)
             time.sleep(0.5)
-            boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
-            if len(boxes) > 2:
+            print("TESTEST")
+            res1 = trt_yolo.predict(outputFrame.bgr, conf=0.3, imgsz=224)
+            if len(res1[0]) > 2:
                 caps_found = True
                 break
-            
+                
             for _ in range(4):
                 grbl_control.jog_step(0, 0, 1)
                 time.sleep(0.2)
-                boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
-                if len(boxes) > 2:
+                res2 = trt_yolo.predict(outputFrame.bgr, conf=0.3, imgsz=224)
+                if len(res2[0]) > 2:
                     caps_found = True
                     break
-                
+                    
                 if SCOPE_RESET:
                     break
 
@@ -303,8 +309,8 @@ def find_capillaries():
         while grbl_control.yPos < grbl_control.yLimit - 1 and SCOPE_RESET == False:
             grbl_control.jog_step(0, 1, 0)
             time.sleep(0.1)
-            boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
-            if len(boxes) > 2:
+            res3 = trt_yolo.predict(outputFrame.bgr, conf=0.3, imgsz=224)
+            if len(res3[0]) > 2:
                 break
 
         print("Adjust focus for most capillaries.")
@@ -316,10 +322,10 @@ def find_capillaries():
         for _ in range(20):
             grbl_control.jog_step(0, 0, 1)
             time.sleep(0.1)
-            boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.3)
-            if (len(boxes) < prev_count or SCOPE_RESET == True):
+            res4 = trt_yolo.predict(outputFrame.bgr, conf=0.3, imgsz=224)
+            if (len(res4[0]) < prev_count or SCOPE_RESET == True):
                 break
-            prev_count = len(boxes)      
+            prev_count = len(res4[0])      
         
         res = "Capillaries found"
 
@@ -332,7 +338,7 @@ def find_capillaries():
 # Save an image file to the server
 @APP.route('/save_image', methods=['POST'])
 def save_image():
-    global trt_yolo 
+    trt_yolo=YOLO('yolo/best500apex.pt')
 
     if isCapturing:
         filename = make_file_name(request.get_json(), ".jpg")
@@ -341,25 +347,24 @@ def save_image():
         # im_rgb = outputFrame.bgr[:, :, [2, 1, 0]]
         # Image.fromarray(im_rgb).save(filename)
         with lock:
-            boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.05)
+            res1 = trt_yolo.predict(outputFrame.bgr, conf=0.05)
             cv2.imwrite(filename, outputFrame.bgr, [cv2.IMWRITE_JPEG_QUALITY, 100])
             csv_row = []
+            if len( res1.boxes ) >= 0 : 
+                # # check apex brighness
+                # prominance_sum = 0                
+                # for box in res: 
+                #     # check the meanStdDeviation of the detected apex to estimate apex prominance
+                #     cap_box = cv2.medianBlur(outputFrame.bgr[box[1]:box[3], box[0]:box[2], 1], 5)
+                #     mean, std = cv2.meanStdDev(cap_box)
+                #     prominance_sum += std
+                #     print(f"m:{mean} s:{std}")
 
-            if len( boxes ) > 0 : 
-                # check apex brighness
-                prominance_sum = 0                
-                for box in boxes: 
-                    # check the meanStdDeviation of the detected apex to estimate apex prominance
-                    cap_box = cv2.medianBlur(outputFrame.bgr[box[1]:box[3], box[0]:box[2], 1], 5)
-                    mean, std = cv2.meanStdDev(cap_box)
-                    prominance_sum += std
-                    print(f"m:{mean} s:{std}")
-
-                    c_point = ( int((box[0]+box[2]) / 2), int((box[1]+box[3]) / 2) )
-                    csv_row += c_point
+                #     c_point = ( int((box[0]+box[2]) / 2), int((box[1]+box[3]) / 2) )
+                #     csv_row += c_point
                 
-                avg_prominance = int(prominance_sum / len(boxes))
-                csv_row.append(f"ap_{avg_prominance}")
+                # avg_prominance = int(prominance_sum / len(boxes))
+                # csv_row.append(f"ap_{avg_prominance}")
 
                 # open the file in the write mode
                 cookies = request.cookies 
@@ -390,8 +395,9 @@ def save_image():
 @APP.route('/save_image_panorama', methods=['POST'])
 def save_image_panorma():
 
-    global PANORAMA_SIZE , trt_yolo 
+    global PANORAMA_SIZE
     print(f"Capturing Panorama: {PANORAMA_SIZE}")
+    trt_yolo=YOLO("yolo/best500apex.pt")
 
     # Move to start point - the top right corner of the panorama
     # Half the width and height away from the current position
@@ -417,14 +423,14 @@ def save_image_panorma():
             filenames.append(filename)
             print(f"saving img file: {filename}")
             with lock:
-                boxes, _confs, _clss = trt_yolo.detect(outputFrame.bgr, 0.05)
+                res1 = trt_yolo.predict(outputFrame.bgr, conf=0.05)
                 cv2.imwrite(filename, outputFrame.bgr, [cv2.IMWRITE_JPEG_QUALITY, 100])
                 csv_row = []
 
-                if len( boxes ) > 0 : 
+                if len( res1.boxes ) > 0 : 
                     # check apex brighness
                     prominance_sum = 0                
-                    for box in boxes: 
+                    for box in res1.boxes: 
                         # check the meanStdDeviation of the detected apex to estimate apex prominance
                         cap_box = cv2.medianBlur(outputFrame.bgr[box[1]:box[3], box[0]:box[2], 1], 5)
                         mean, std = cv2.meanStdDev(cap_box)
@@ -482,7 +488,7 @@ def save_video():
 
         # Capture object setup
         cap_vid_size = (UVC_SETTINGS["video_cap_w"], UVC_SETTINGS["video_cap_h"])
-        fourcc = cv2.VideoWriter_fourcc(*'avc1')
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         out = cv2.VideoWriter(filename, fourcc, CAP_FPS, cap_vid_size)
 
         for i in range(frames_to_capture):
@@ -491,10 +497,11 @@ def save_video():
                 frame = cv2.resize(outputFrame.bgr, cap_vid_size, interpolation=cv2.INTER_AREA)
                 out.write(frame)
 
+        
         out.release()
         
         # Save metadata txt file
-        # save_metadata(filename, UVC_SETTINGS["video_cap_w"], UVC_SETTINGS["video_cap_h"])
+        #save_metadata(filename, UVC_SETTINGS["video_cap_w"], UVC_SETTINGS["video_cap_h"])
         
         res = "file saved!"
         
@@ -728,7 +735,7 @@ def test_model():
                 continue
 
         if isCapturing:
-            res = trt_yolo(outputFrame.bgr, 0.3, save=False)
+            res = trt_yolo.predict(outputFrame.bgr, conf=0.3)
             for r in res:
                 if len(r) > 2:
                     print("Capillaries found")
@@ -850,7 +857,7 @@ init_scope()
 if (UVC_SETTINGS["robo_scope_mode"]):
     
     print("Loading capillary apex detection model...")
-    trt_yolo = TrtYOLO(UVC_SETTINGS["apex_detection_model"], (416, 416), 1, cuda_ctx)
+    trt_yolo = YOLO(UVC_SETTINGS["apex_detection_model"], (416, 416), 1)
     
     sensors = SensorsFeed()
 

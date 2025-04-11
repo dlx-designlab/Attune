@@ -3,9 +3,9 @@ from sensors import SensorsFeed
 import time
 
 # log time in seconds
-log_duration = 5
+log_duration = 10
 # samples per mesurements (to average)
-rng_samples = 20
+rng_samples = 100
 
 sns = SensorsFeed()
 ave_range_log = []
@@ -17,7 +17,7 @@ while (time.time() - start_time) < log_duration:
 
     range_log = []
     while len(range_log) < rng_samples:
-        range_log.append(sns.get_range())
+        range_log.append(sns.get_temp())
         time.sleep(0.01)
     
     ave_rng = sum(range_log) / len(range_log)
@@ -33,6 +33,8 @@ while (time.time() - start_time) < log_duration:
 
     ave_range_log.append(ave_rng)
     # time.sleep(1)
+    
+    
 
 plt.plot(ave_range_log)
 plt.show()
