@@ -10,8 +10,8 @@ import ctypes
 
 import numpy as np
 import cv2
-import tensorrt as trt
-import pycuda.driver as cuda
+#import tensorrt as trt
+#import pycuda.driver as cuda
 
 
 try:

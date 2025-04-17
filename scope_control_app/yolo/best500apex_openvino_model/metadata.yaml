@@ -1,0 +1,14 @@
+description: Ultralytics best500apex model trained on /content/datasets/apex-detection-8/data.yaml
+author: Ultralytics
+date: '2024-05-10T15:58:13.825180'
+version: 8.2.11
+license: AGPL-3.0 License (https://ultralytics.com/license)
+docs: https://docs.ultralytics.com
+stride: 32
+task: detect
+batch: 1
+imgsz:
+- 224
+- 224
+names:
+  0: '1'

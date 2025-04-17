@@ -24,7 +24,7 @@
 
 <style>
   .bgimg {
-    background-image: url("{{ url_for('static', filename='img/frame-cross.png') }}"), url("{{ url_for('video_feed_test') }}");
+    background-image: url("{{ url_for('static', filename='img/frame-cross.png') }}"), url("{{ url_for('video_feed') }}");
     background-color: #000;
     min-height: 100%;
     background-repeat: no-repeat;
@@ -52,7 +52,6 @@
         {% if settingsMode == True %}
             <button id="settingsBtn" class="fas fa-cog fa-1_5x"></button>
         {% endif %}
-        <button class="fas fa-images fa-1_5x" onclick="runTestModel()"></button>
     </div>
 
     <div id="motionControlPanel" class="settings-panel w3-display-left">
@@ -310,8 +309,6 @@
         }
     });
 
-
-
     // Set Scope Controls values function
     function set_scope_control(ctl, val) {
       console.log('Adjusing ' + ctl + ' to ' + val);
@@ -490,17 +487,28 @@
         leftBtnsPanel.style.display="none";
     }
 
+    closePanelButtons.forEach(item => {
+        item.onclick = function() {
+          console.log("Closing Control Panel");            
+          settingsPopup.style.display = "none";
+          motionCtlPopup.style.display = "none";      
+          leftBtnsPanel.style.display = "block";
+        }
+    });
+
+    // closePanelButtons.onclick = function() {
+    //     console.log('Closing Controls Panel');
+    //     settingsPopup.style.display = "none";
+    //     motionCtlPopup.style.display = "none";
+    //     leftBtnsPanel.style.display="block";        
+    // }
+
 
     // UUID Manager
     function updateUUID(){
         var uuidsListBoxVal = document.getElementById('uuids_list_box').value;
         console.log(uuidsListBoxVal)
         document.cookie = "scan_uuid=" + uuidsListBoxVal + ";max-age=" + 90*24*60*60 + ";";
-    }
-
-    //Testing image detection model
-    function runTestModel(){
-        
     }
 
     function addNewUUID(){
@@ -575,14 +583,6 @@
 
     // }
 
-
-    closePanelButtons.forEach(item => {
-        item.onclick = function() {
-          settingsPopup.style.display = "none";
-          motionCtlPopup.style.display = "none";      
-          leftBtnsPanel.style.display = "block";
-        }
-    });
 
     // window.onclick = function(event) {
     //   if (event.target == modal) {
