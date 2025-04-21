@@ -224,7 +224,7 @@ def home_finger():
 @APP.route('/find_caps', methods=['POST'])
 def find_capillaries():
     global FOCUS, DETECTOR, SCOPE_RESET, outputFrame, controls_dict
-    trt_yolo=YOLO('yolo/best500apex_openvino_model')
+    # trt_yolo=YOLO('yolo/best500apex_openvino_model', task='detect')
     
     # TODO: Make better reset cycle
     SCOPE_RESET = False
@@ -280,7 +280,7 @@ def find_capillaries():
             grbl_control.jog_step(0, 3, -4)
             time.sleep(0.5)
             print("TESTEST")
-            res1 = trt_yolo.predict(outputFrame.bgr, conf=0.3, imgsz=224)
+            res1 = trt_yolo.predict(outputFrame.bgr, conf=0.05, imgsz=224)
             if len(res1[0]) > 2:
                 caps_found = True
                 break
@@ -288,7 +288,7 @@ def find_capillaries():
             for _ in range(4):
                 grbl_control.jog_step(0, 0, 1)
                 time.sleep(0.2)
-                res2 = trt_yolo.predict(outputFrame.bgr, conf=0.3, imgsz=224)
+                res2 = trt_yolo.predict(outputFrame.bgr, conf=0.05, imgsz=224)
                 if len(res2[0]) > 2:
                     caps_found = True
                     break
@@ -309,7 +309,7 @@ def find_capillaries():
         while grbl_control.yPos < grbl_control.yLimit - 1 and SCOPE_RESET == False:
             grbl_control.jog_step(0, 1, 0)
             time.sleep(0.1)
-            res3 = trt_yolo.predict(outputFrame.bgr, conf=0.3, imgsz=224)
+            res3 = trt_yolo.predict(outputFrame.bgr, conf=0.05, imgsz=224)
             if len(res3[0]) > 2:
                 break
 
@@ -322,7 +322,7 @@ def find_capillaries():
         for _ in range(20):
             grbl_control.jog_step(0, 0, 1)
             time.sleep(0.1)
-            res4 = trt_yolo.predict(outputFrame.bgr, conf=0.3, imgsz=224)
+            res4 = trt_yolo.predict(outputFrame.bgr, conf=0.05, imgsz=224)
             if (len(res4[0]) < prev_count or SCOPE_RESET == True):
                 break
             prev_count = len(res4[0])      
@@ -338,7 +338,7 @@ def find_capillaries():
 # Save an image file to the server
 @APP.route('/save_image', methods=['POST'])
 def save_image():
-    trt_yolo=YOLO('yolo/best500apex.pt')
+    # trt_yolo=YOLO('yolo/best500apex_openvino_model', task='detect') 
 
     if isCapturing:
         filename = make_file_name(request.get_json(), ".jpg")
@@ -347,24 +347,43 @@ def save_image():
         # im_rgb = outputFrame.bgr[:, :, [2, 1, 0]]
         # Image.fromarray(im_rgb).save(filename)
         with lock:
-            res1 = trt_yolo.predict(outputFrame.bgr, conf=0.05)
             cv2.imwrite(filename, outputFrame.bgr, [cv2.IMWRITE_JPEG_QUALITY, 100])
             csv_row = []
-            if len( res1.boxes ) >= 0 : 
-                # # check apex brighness
-                # prominance_sum = 0                
-                # for box in res: 
-                #     # check the meanStdDeviation of the detected apex to estimate apex prominance
-                #     cap_box = cv2.medianBlur(outputFrame.bgr[box[1]:box[3], box[0]:box[2], 1], 5)
-                #     mean, std = cv2.meanStdDev(cap_box)
-                #     prominance_sum += std
-                #     print(f"m:{mean} s:{std}")
+            
+            res1 = trt_yolo.predict(outputFrame.bgr, conf=0.05, imgsz=224) #Add "show=True" to see the image with boxes          
+            if len( res1[0] ) >= 2 : 
+                print(res1[0].boxes.xyxy)
+                ## check apex brighness
+                prominance_sum = 0                
+                results = res1[0]  # First image's prediction
+                if results.boxes is not None:
+                    for box in results.boxes:
+                        x1, y1, x2, y2 = map(int, box.xyxy[0].tolist()) 
+                        if y2 > y1 and x2 > x1:
+                            cap_box = cv2.medianBlur(outputFrame.bgr[y1:y2, x1:x2, 1], 5)
+                            mean, std = cv2.meanStdDev(cap_box)
+                            prominance_sum +=  [0][0]  # std is 2D array
 
-                #     c_point = ( int((box[0]+box[2]) / 2), int((box[1]+box[3]) / 2) )
-                #     csv_row += c_point
+                            c_point = ((x1 + x2) // 2, (y1 + y2) // 2)
+                            csv_row += c_point
+                        else:
+                            print(f"Skipping invalid box: {x1}, {y1}, {x2}, {y2}")
+                    
+                    # check the meanStdDeviation of the detected apex to estimate apex prominance
+                    # cap_box = cv2.medianBlur(outputFrame.bgr[box[1]:box[3], box[0]:box[2], 1], 5)
+                    # print(f"Box value: {box}")
+                    # x1, y1, x2, y2 = map(int, box.xyxy[:4])  # ensure all indices are integers
+                    # cap_box = cv2.medianBlur(outputFrame.bgr[y1:y2, x1:x2, 1], 5)
+
+                    # mean, std = cv2.meanStdDev(cap_box)
+                    # prominance_sum += std
+                    # print(f"m:{mean} s:{std}")
+
+                    # c_point = ( int((box[0]+box[2]) / 2), int((box[1]+box[3]) / 2) )
+                    # csv_row += c_point
                 
-                # avg_prominance = int(prominance_sum / len(boxes))
-                # csv_row.append(f"ap_{avg_prominance}")
+                avg_prominance = int(prominance_sum / len(results.boxes))
+                csv_row.append(f"ap_{avg_prominance}")
 
                 # open the file in the write mode
                 cookies = request.cookies 
@@ -377,6 +396,8 @@ def save_image():
                     # create the csv writer
                     writer = csv.writer(f)
                     writer.writerow(csv_row)
+            else:
+                print("No apex points detected")
         
         # Save metadata txt file
         save_metadata(filename, outputFrame.bgr.shape[1], outputFrame.bgr.shape[0])
@@ -393,11 +414,12 @@ def save_image():
 # Save a series of image files (panorama) along the X axis
 # The staring point of the panorama should be the center of the interest area
 @APP.route('/save_image_panorama', methods=['POST'])
-def save_image_panorma():
+def save_image_panorama():
 
     global PANORAMA_SIZE
+    global outputFrame
     print(f"Capturing Panorama: {PANORAMA_SIZE}")
-    trt_yolo=YOLO("yolo/best500apex.pt")
+    # trt_yolo=YOLO("yolo/best500apex_openvino_model")
 
     # Move to start point - the top right corner of the panorama
     # Half the width and height away from the current position
@@ -423,37 +445,42 @@ def save_image_panorma():
             filenames.append(filename)
             print(f"saving img file: {filename}")
             with lock:
-                res1 = trt_yolo.predict(outputFrame.bgr, conf=0.05)
+                # outputFrame = cap.get_frame_robust()
+                # res1 = trt_yolo.predict(outputFrame.bgr, conf=0.05, imgsz=224)
                 cv2.imwrite(filename, outputFrame.bgr, [cv2.IMWRITE_JPEG_QUALITY, 100])
                 csv_row = []
 
-                if len( res1.boxes ) > 0 : 
-                    # check apex brighness
-                    prominance_sum = 0                
-                    for box in res1.boxes: 
-                        # check the meanStdDeviation of the detected apex to estimate apex prominance
-                        cap_box = cv2.medianBlur(outputFrame.bgr[box[1]:box[3], box[0]:box[2], 1], 5)
-                        mean, std = cv2.meanStdDev(cap_box)
-                        prominance_sum += std
-                        print(f"m:{mean} s:{std}")
+                # if len(res1[0].boxes) > 0 : 
+                #     # check apex brighness
+                #     prominance_sum = 0                
+                #     results = res1[0]  # First image's prediction
+                #     if results.boxes is not None:
+                #         for box in results.boxes:
+                #             x1, y1, x2, y2 = map(int, box.xyxy[0].tolist()) 
+                #             if y2 > y1 and x2 > x1:
+                #                 cap_box = cv2.medianBlur(outputFrame.bgr[y1:y2, x1:x2, 1], 5)
+                #                 mean, std = cv2.meanStdDev(cap_box)
+                #                 prominance_sum += std[0][0]  # std is 2D array
 
-                        c_point = ( int((box[0]+box[2]) / 2), int((box[1]+box[3]) / 2) )
-                        csv_row += c_point
+                #                 c_point = ((x1 + x2) // 2, (y1 + y2) // 2)
+                #                 csv_row += c_point
+                #             else:
+                #                 print(f"Skipping invalid box: {x1}, {y1}, {x2}, {y2}")
                     
-                    avg_prominance = int(prominance_sum / len(boxes))
-                    csv_row.append(f"ap_{avg_prominance}")
+                #     avg_prominance = int(prominance_sum / len(res1[0].boxes))
+                #     csv_row.append(f"ap_{avg_prominance}")
 
-                    # open the file in the write mode
-                    cookies = request.cookies 
-                    uuid = cookies.get("scan_uuid")
-                    csv_path = f"static/captured_pics/{uuid}/{uuid}.csv"
-                    print(f"writing {csv_path}")
-                    print(f"data: {csv_row}")
+                #     # open the file in the write mode
+                #     cookies = request.cookies 
+                #     uuid = cookies.get("scan_uuid")
+                #     csv_path = f"static/captured_pics/{uuid}/{uuid}.csv"
+                #     print(f"writing {csv_path}")
+                #     print(f"data: {csv_row}")
                     
-                    with open(csv_path, 'a') as f:
-                        # create the csv writer
-                        writer = csv.writer(f)
-                        writer.writerow(csv_row)
+                #     with open(csv_path, 'a') as f:
+                #         # create the csv writer
+                #         writer = csv.writer(f)
+                #         writer.writerow(csv_row)
             
             # Save metadata txt file
             save_metadata(filename, outputFrame.bgr.shape[1], outputFrame.bgr.shape[0])
@@ -465,7 +492,7 @@ def save_image_panorma():
         out = make_file_name(request.get_json(), "", pan_pos="stitched")
         system(f"nona -o {out} -m PNG template.pto {' '.join(filenames[-8:])}")
 
-        res = f"Panorma Done! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos}"
+        res = f"Panorama Done! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos}"
     
     else:
         res = "could not save!"
@@ -717,7 +744,7 @@ def generate():
 def test_model():
     # grab global references to the output frame and lock variables
     global outputFrame, lock, isCapturing
-    trt_yolo=YOLO("yolo/best500apex.pt")
+    # trt_yolo=YOLO("yolo/best500apex.pt")
     if os.path.exists("runs"):
         shutil.rmtree("runs")
 
@@ -857,7 +884,9 @@ init_scope()
 if (UVC_SETTINGS["robo_scope_mode"]):
     
     print("Loading capillary apex detection model...")
-    trt_yolo = YOLO(UVC_SETTINGS["apex_detection_model"], (416, 416), 1)
+    # trt_yolo = YOLO(UVC_SETTINGS["apex_detection_model"], (416, 416), 1)
+    trt_yolo = YOLO(UVC_SETTINGS["apex_detection_model"],  task='detect')
+
     
     sensors = SensorsFeed()
 
