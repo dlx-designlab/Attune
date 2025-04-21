@@ -169,6 +169,7 @@
       <button id="rec-img-btn" class="record-button fas fa-camera fa-1_5x"  onclick="capture_scope_feed('/save_image')"></button>
       <button id="rec-pan-btn" class="record-button fas fa-expand fa-1_5x"  onclick="capture_scope_feed('/save_image_panorama')"></button>      
       <button id="rec-vid-btn" class="record-button fas fa-video fa-1_5x"  onclick="capture_scope_feed('/save_vid')"></button>
+      <button id="play-music-btn" class="record-button fas fa-music fa-1_5x"  onclick="play_music_control()"></button>
   </div>
 
   <div class="status-log w3-display-bottomright">
@@ -327,6 +328,23 @@
 
     };
 
+    function play_music_control() {
+      console.log('Loading music...');
+      $.ajax({
+          type: 'POST',
+          url: "/play_music",
+          contentType: 'application/json;charset=UTF-8',
+          //data: JSON.stringify({'control': ctl, 'value': val}),
+          success: function(result) {
+                document.getElementById("status").innerHTML = result;
+          },
+          error: function(result) {
+                document.getElementById("status").innerHTML = "ERROR!";
+          }
+      });
+
+    };
+
     // Keyboard keys to control scope motion 
     $(window).keydown(function(e) {
         // console.log(e.keyCode)
@@ -423,11 +441,13 @@
       var recVidBtn = document.getElementById("rec-vid-btn");
       var recPanBtn = document.getElementById("rec-pan-btn");      
       var recImgBtn = document.getElementById("rec-img-btn");
+      var playMusBtn = document.getElementById("play-music-btn");
       
       captureIndicator.style.display = "block";
       recVidBtn.disabled = true;
       recPanBtn.disabled = true;
       recImgBtn.disabled = true;
+      playMusBtn.disabled = true;
 
       $.ajax({
           type: 'POST',
@@ -440,13 +460,55 @@
                 recVidBtn.disabled = false;
                 recImgBtn.disabled = false;
                 recPanBtn.disabled = false;
+                playMusBtn.disabled = false;
           },
           error: function(result) {
                 document.getElementById("status").innerHTML = "ERROR!";
                 captureIndicator.style.display = "none";
                 recVidBtn.disabled = false;
                 recImgBtn.disabled = false;
-                recPanBtn.disabled = false;                
+                recPanBtn.disabled = false; 
+                playMusBtn.disabled = false;
+          }
+      });
+
+    }
+
+    // Play music
+    function play_music(){
+      var timeStamp = new Date().getTime();
+      var captureIndicator = document.getElementById("captureIndicator");
+      var recVidBtn = document.getElementById("rec-vid-btn");
+      var recPanBtn = document.getElementById("rec-pan-btn");      
+      var recImgBtn = document.getElementById("rec-img-btn");
+      var playMusBtn = document.getElementById("play-mus-btn");
+      
+      captureIndicator.style.display = "block";
+      recVidBtn.disabled = true;
+      recPanBtn.disabled = true;
+      recImgBtn.disabled = true;
+      playMusBtn.disabled = true;
+
+      $.ajax({
+          type: 'POST',
+          url: capture_path,
+          contentType: 'application/json;charset=UTF-8',
+          data: JSON.stringify({'timestamp': timeStamp}),
+          success: function(result) {
+                document.getElementById("status").innerHTML = result;
+                captureIndicator.style.display = "none";
+                recVidBtn.disabled = false;
+                recImgBtn.disabled = false;
+                recPanBtn.disabled = false;
+                playMusBtn.disabled = false;
+          },
+          error: function(result) {
+                document.getElementById("status").innerHTML = "ERROR!";
+                captureIndicator.style.display = "none";
+                recVidBtn.disabled = false;
+                recImgBtn.disabled = false;
+                recPanBtn.disabled = false; 
+                playMusBtn.disabled = false;
           }
       });
 

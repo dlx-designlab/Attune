@@ -30,6 +30,9 @@ import uvc  # >> https://github.com/pupil-labs/pyuvc
 # GRBL Control Class
 from grbl import GrblControl
 
+# Music calculation
+from music_picker import MusicPicker
+
 # File managing class
 from file_manager import FileManager
 
@@ -409,7 +412,25 @@ def save_image():
 
     print(res)
     return res
+    
 
+@APP.route('/play_music', methods=['POST'])
+def play_music():
+    picker = MusicPicker()
+    cookies = request.cookies
+    uuid = request.cookies.get("scan_uuid")
+    csv_path = f"static/captured_pics/{uuid}/{uuid}.csv"
+    csvfile = open(csv_path)
+    reader = csv.reader(csvfile)
+    has_data = len(list(reader))
+    if not os.path.exists(csv_path):
+        res = "CSV file not found"
+    elif (has_data > 0):
+        value_music = picker.data_to_music(uuid)
+        res = f"Music found {value_music}"
+    else:
+        res = "Not enough data"
+    return res
 
 # Save a series of image files (panorama) along the X axis
 # The staring point of the panorama should be the center of the interest area
