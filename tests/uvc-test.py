@@ -7,6 +7,7 @@ import uvc  # >> https://github.com/pupil-labs/pyuvc
 import logging
 import cv2
 import time
+import uvc
 
 logging.basicConfig(level=logging.INFO)
 
@@ -29,9 +30,13 @@ cap = uvc.Capture(dev_list[scopeDeviceId]["uid"])
 time.sleep(1)
 controls_dict = dict([(c.display_name, c) for c in cap.controls])
 
-# Print available Capture Modes
-print("Availbale Capture Modes:")
-for count, mode in enumerate(cap.avaible_modes):
+print("All Capture Modes:")
+for count, mode in enumerate(cap.all_modes):
+    print(count, mode)
+
+# Print available (supported) capture modes
+print("Available (Supported) Capture Modes:")
+for count, mode in enumerate(cap.available_modes):
     print(count, mode)
 
 # Print available UVC controls
@@ -40,14 +45,59 @@ for control in controls_dict:
     print(f"{control}: {controls_dict[control].value} ({controls_dict[control].min_val}-{controls_dict[control].max_val})")
 print("------")
 
+frame = None
+# Try custom modes with lower FPS
+
+custom_modes = [
+    CameraMode(width=1920, height=1080, fps=20, format_native=7, format_name='MJPG', supported=True),
+    CameraMode(width=1920, height=1080, fps=10, format_native=7, format_name='MJPG', supported=True),
+    CameraMode(width=1280, height=720, fps=20, format_native=7, format_name='MJPG', supported=True),
+    CameraMode(width=1280, height=720, fps=10, format_native=7, format_name='MJPG', supported=True),
+]
+
+for i, mode in enumerate(custom_modes):
+    try:
+        print(f"Trying custom mode {i}: {mode}")
+        cap.frame_mode = mode
+        frame = cap.get_frame_robust()
+        print(f"Custom mode {i} succeeded: {mode}")
+        break
+    except uvc.InitError as e:
+        print(f"Custom mode {i} failed: {e}")
+        if i == len(custom_modes) - 1:
+            print("No custom modes worked, trying available modes")
+            # Fallback to available modes
+            for j, avail_mode in enumerate(cap.available_modes):
+                try:
+                    print(f"Trying available mode {j}: {avail_mode}")
+                    cap.frame_mode = avail_mode
+                    frame = cap.get_frame_robust()
+                    print(f"Available mode {j} succeeded: {avail_mode}")
+                    break
+                except uvc.InitError as e:
+                    print(f"Available mode {j} failed: {e}")
+                    if j == len(cap.available_modes) - 1:
+                        print("Error: No supported modes found")
+                        exit(1)
+
+if frame:
+    print("Connection established")
+    time.sleep(0.5)
+    print("Frame captured")
+    time.sleep(0.5)
+else:
+    print("Failed to capture frame")
+    exit(1)
 # Capture a frame to initialize the cope
-capture_mode = cap.avaible_modes[0]
-cap.frame_mode = (capture_mode[0], capture_mode[1], capture_mode[2])
-print("connection established")
-time.sleep(.5)
-frame = cap.get_frame_robust()
-print("frame captured")
-time.sleep(.5)
+# frame = cap.get_frame_robust()
+# # capture_mode = cap.available_modes[2]
+
+# cap.frame_mode = cap.available_modes[3]
+# print("connection established")
+# time.sleep(.5)
+# print("frame captured")
+# time.sleep(.5)
+
 # Set Auto-focus to false and set a custom value
 # controls_dict['Auto Focus'].value = 0
 # controls_dict['Absolute Focus'].value = abs_focus
