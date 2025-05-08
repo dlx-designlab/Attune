@@ -49,7 +49,7 @@ from flask import (Flask, Response, jsonify, make_response, redirect,
 
 #from utils.yolo_with_plugins import TrtYOLO
 #cuda_ctx = cuda.Device(0).make_context()
-#trt_yolo = YOLO('best500apex.pt')
+#trt_yolo = YOLO('yolo/best500apex_openvino_model')
 
 # initialize a flask object
 APP = Flask(__name__)
@@ -87,6 +87,7 @@ def index():
 
     # Check for existing cookie with UID. Make a new one if doesnt exist
     cookies = request.cookies
+    audio = "001"
 
     if cookies.get("scan_uuid"):
         uid = cookies.get("scan_uuid")
@@ -97,7 +98,8 @@ def index():
                                             settingsMode=UVC_SETTINGS["setting_available"], 
                                             roboscopeMdde = UVC_SETTINGS["robo_scope_mode"],
                                             step_size = UVC_SETTINGS["default_step_size"],
-                                            feed_rate = UVC_SETTINGS["default_feed_rate"]))
+                                            feed_rate = UVC_SETTINGS["default_feed_rate"],
+                                            audio=audio))
     else:
         uid = generate_uuid()
         res = make_response(render_template("index.html", 
@@ -107,7 +109,8 @@ def index():
                                             settingsMode=UVC_SETTINGS["setting_available"], 
                                             roboscopeMdde = UVC_SETTINGS["robo_scope_mode"],
                                             step_size = UVC_SETTINGS["default_step_size"],
-                                            feed_rate = UVC_SETTINGS["default_feed_rate"]))
+                                            feed_rate = UVC_SETTINGS["default_feed_rate"],
+                                            audio=audio))
         # Create the cookie
         res.set_cookie(
             "scan_uuid",
@@ -283,7 +286,7 @@ def find_capillaries():
             grbl_control.jog_step(0, 3, -4)
             time.sleep(0.5)
             print("TESTEST")
-            res1 = trt_yolo.predict(outputFrame.bgr, conf=0.05, imgsz=224)
+            res1 = trt_yolo.predict(outputFrame.bgr, conf=0.1, imgsz=224)
             if len(res1[0]) > 2:
                 caps_found = True
                 break
@@ -291,7 +294,7 @@ def find_capillaries():
             for _ in range(4):
                 grbl_control.jog_step(0, 0, 1)
                 time.sleep(0.2)
-                res2 = trt_yolo.predict(outputFrame.bgr, conf=0.05, imgsz=224)
+                res2 = trt_yolo.predict(outputFrame.bgr, conf=0.1, imgsz=224)
                 if len(res2[0]) > 2:
                     caps_found = True
                     break
@@ -312,7 +315,7 @@ def find_capillaries():
         while grbl_control.yPos < grbl_control.yLimit - 1 and SCOPE_RESET == False:
             grbl_control.jog_step(0, 1, 0)
             time.sleep(0.1)
-            res3 = trt_yolo.predict(outputFrame.bgr, conf=0.05, imgsz=224)
+            res3 = trt_yolo.predict(outputFrame.bgr, conf=0.1, imgsz=224)
             if len(res3[0]) > 2:
                 break
 
@@ -325,7 +328,7 @@ def find_capillaries():
         for _ in range(20):
             grbl_control.jog_step(0, 0, 1)
             time.sleep(0.1)
-            res4 = trt_yolo.predict(outputFrame.bgr, conf=0.05, imgsz=224)
+            res4 = trt_yolo.predict(outputFrame.bgr, conf=0.1, imgsz=224)
             if (len(res4[0]) < prev_count or SCOPE_RESET == True):
                 break
             prev_count = len(res4[0])      
@@ -339,79 +342,259 @@ def find_capillaries():
 
 
 # Save an image file to the server
+# @APP.route('/save_image', methods=['POST'])
+# def save_image():
+#     global trt_yolo, outputFrame, lock
+
+#     def preprocess_image(image):
+#         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+#         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+#         equalized = clahe.apply(gray)
+#         mask = gray < 200  # Masquer les zones surexposées
+#         enhanced = cv2.cvtColor(equalized, cv2.COLOR_GRAY2BGR)
+#         denoised = cv2.medianBlur(enhanced, 5)
+#         denoised[~mask] = 0
+#         return denoised
+
+#     if isCapturing:
+#         filename = make_file_name(request.get_json(), ".jpg")
+#         annotated_filename = filename.replace(".jpg", "_annotated.jpg")
+#         print(f"Saving image: {filename}")
+
+#         with lock:
+#             focus_score = DETECTOR.check_focus(outputFrame)
+#             if focus_score < 0.5:
+#                 print("Image not focused, retrying...")
+#                 auto_focus()
+#                 return "Retrying focus"
+
+#             cv2.imwrite(filename, outputFrame.bgr, [cv2.IMWRITE_JPEG_QUALITY, 100])
+#             csv_row = []
+#             annotated_frame = outputFrame.bgr.copy()
+
+#             try:
+#                 enhanced_frame = preprocess_image(outputFrame.bgr)
+#                 res = trt_yolo.predict(enhanced_frame, conf=0.2, imgsz=224, iou=0.6)
+#                 results = res[0]
+
+#                 prominance_sum = 0
+#                 prominances = []
+#                 min_box_size, max_box_size = 5, 150
+#                 box_count = 0
+
+#                 # Sauvegarde des boîtes avant et après medianBlur (limité à 4)
+#                 raw_boxes = []
+#                 blurred_boxes = []
+#                 if results.boxes is not None:
+#                     for box in results.boxes:
+#                         if box_count >= 4:
+#                             break
+#                         x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+#                         if y2 > y1 and x2 > x1:
+#                             # Boîte brute (avant medianBlur)
+#                             raw_box = outputFrame.bgr[y1:y2, x1:x2]
+#                             raw_boxes.append(raw_box)
+#                             # Boîte après medianBlur
+#                             blurred_box = cv2.medianBlur(outputFrame.bgr[y1:y2, x1:x2], 5)
+#                             blurred_boxes.append(blurred_box)
+#                             box_count += 1
+
+#                     # Sauvegarde des boîtes
+#                     for i, (raw, blurred) in enumerate(zip(raw_boxes, blurred_boxes)):
+#                         cv2.imwrite(f"static/captured_pics/raw_box_{i}.jpg", raw)
+#                         cv2.imwrite(f"static/captured_pics/blurred_box_{i  }.jpg", blurred)
+
+#                 if results.boxes is not None:
+#                     for box in results.boxes:
+#                         x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+#                         if y2 > y1 and x2 > x1:
+#                             if min_box_size < (x2 - x1) < max_box_size and min_box_size < (y2 - y1) < max_box_size:
+#                                 cap_box = cv2.medianBlur(outputFrame.bgr[(y1-10):(y2+10), (x1-10):(x2+10), 1], 5)
+#                                 mean, std = cv2.meanStdDev(cap_box)
+#                                 prominance = std[0][0]
+#                                 prominance_sum += prominance
+#                                 prominances.append(prominance)
+#                                 c_point = ((x1 + x2) // 2, (y1 + y2) // 2)
+#                                 csv_row += c_point
+#                                 cv2.rectangle(annotated_frame, ((x1-10), (y1-10)), ((x2+10), (y2+10)), (0, 255, 0), 2)
+#                                 cv2.putText(annotated_frame, f"Prom: {prominance:.2f}", 
+#                                             (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 1)
+
+#                     if prominances:
+#                         avg_prominance = int(prominance_sum / len(prominances))
+#                         csv_row.append(f"ap_{avg_prominance}")
+#                         cv2.putText(annotated_frame, f"Caps: {len(prominances)}, Avg Prom: {avg_prominance}",  
+#                                     (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+
+#                         cookies = request.cookies
+#                         uuid = cookies.get("scan_uuid")
+#                         csv_path = f"static/captured_pics/{uuid}/{uuid}.csv"
+#                         print(f"Writing CSV: {csv_path}")
+#                         if len(prominances) >= 2:
+#                             with open(csv_path, 'a') as f:
+#                                 writer = csv.writer(f)
+#                                 writer.writerow(csv_row)
+#                             cv2.imwrite(annotated_filename, annotated_frame, [cv2.IMWRITE_JPEG_QUALITY, 100])
+#                         else:
+#                             print("Not enough valid capillaries, skipping annotated image save")
+#                     else:
+#                         print("No valid prominances detected")
+#             except Exception as e:
+#                 print(f"YOLO prediction failed: {e}")
+#                 return "YOLO prediction failed"
+
+#         save_metadata(filename, outputFrame.bgr.shape[1], outputFrame.bgr.shape[0])
+#         return "File saved!"
+#     else:
+#         return "Could not save!"
+
 @APP.route('/save_image', methods=['POST'])
 def save_image():
-    # trt_yolo=YOLO('yolo/best500apex_openvino_model', task='detect') 
+    global trt_yolo, outputFrame, lock, isCapturing
 
-    if isCapturing:
-        filename = make_file_name(request.get_json(), ".jpg")
-        print(f"saving img file: {filename}")
-        # Convert BGR to RGB and save the image
-        # im_rgb = outputFrame.bgr[:, :, [2, 1, 0]]
-        # Image.fromarray(im_rgb).save(filename)
-        with lock:
-            cv2.imwrite(filename, outputFrame.bgr, [cv2.IMWRITE_JPEG_QUALITY, 100])
-            csv_row = []
-            
-            res1 = trt_yolo.predict(outputFrame.bgr, conf=0.05, imgsz=224) #Add "show=True" to see the image with boxes          
-            if len( res1[0] ) >= 2 : 
-                print(res1[0].boxes.xyxy)
-                ## check apex brighness
-                prominance_sum = 0                
-                results = res1[0]  # First image's prediction
-                if results.boxes is not None:
-                    for box in results.boxes:
-                        x1, y1, x2, y2 = map(int, box.xyxy[0].tolist()) 
-                        if y2 > y1 and x2 > x1:
-                            cap_box = cv2.medianBlur(outputFrame.bgr[y1:y2, x1:x2, 1], 5)
-                            mean, std = cv2.meanStdDev(cap_box)
-                            prominance_sum +=  [0][0]  # std is 2D array
+    if not isCapturing:
+        return "Could not save!"
 
-                            c_point = ((x1 + x2) // 2, (y1 + y2) // 2)
-                            csv_row += c_point
-                        else:
-                            print(f"Skipping invalid box: {x1}, {y1}, {x2}, {y2}")
-                    
-                    # check the meanStdDeviation of the detected apex to estimate apex prominance
-                    # cap_box = cv2.medianBlur(outputFrame.bgr[box[1]:box[3], box[0]:box[2], 1], 5)
-                    # print(f"Box value: {box}")
-                    # x1, y1, x2, y2 = map(int, box.xyxy[:4])  # ensure all indices are integers
-                    # cap_box = cv2.medianBlur(outputFrame.bgr[y1:y2, x1:x2, 1], 5)
+    json_data = request.get_json() or {}
+    filename = make_file_name(json_data, ".jpg")
+    annotated = filename.replace(".jpg", "_annotated.jpg")
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
 
-                    # mean, std = cv2.meanStdDev(cap_box)
-                    # prominance_sum += std
-                    # print(f"m:{mean} s:{std}")
+    with lock:
+        csv_row = []
+        if outputFrame is None:
+            return "No frame"
+        cv2.imwrite(filename, outputFrame.bgr, [cv2.IMWRITE_JPEG_QUALITY, 100])
+        annotated_image = outputFrame.bgr.copy()
+        prominance_sum = 0
+        point = []
+        distance = 0
 
-                    # c_point = ( int((box[0]+box[2]) / 2), int((box[1]+box[3]) / 2) )
-                    # csv_row += c_point
-                
-                avg_prominance = int(prominance_sum / len(results.boxes))
+        try:
+            res = trt_yolo.predict(outputFrame.bgr, conf=0.2, imgsz=224, iou=0.6)[0]
+            print(res.boxes.xyxy)
+
+            if res.boxes:
+                for box in res.boxes:
+                    x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+                    if y2 > y1 and x2 > x1 and 5 < (x2 - x1) < 150 and 5 < (y2 - y1) < 150:
+                            y1_enl = y1-10
+                            y2_enl = y2+10  
+                            x1_enl = x1-10
+                            x2_enl = x2+10
+                            cap_box = cv2.medianBlur(outputFrame.bgr[y1_enl:y2_enl, x1_enl:x2_enl, 1], 5)
+                            if cap_box.size > 0:
+                                _, std = cv2.meanStdDev(cap_box)
+                                prom = std[0][0]
+                                cv2.rectangle(annotated_image, (x1_enl, y1_enl), (x2_enl, y2_enl), (0, 255, 0), 2)
+                                cv2.putText(annotated_image, f"P:{prom:.1f}", (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 1)
+                                c_point = ((x1 + x2) // 2, (y1 + y2) // 2)
+                                print(c_point)
+                                csv_row += c_point
+                                prominance_sum += prom
+                                point += c_point
+                cv2.imwrite(annotated, annotated_image)
+                print(point)
+                # for i in len(point):  
+                #     for k in len(point):
+                #         if 
+                #         distance = point[i]-
+                # average_distance = sum(point)/len(point)
+
+                avg_prominance = int(prominance_sum / len(res.boxes))
                 csv_row.append(f"ap_{avg_prominance}")
-
-                # open the file in the write mode
-                cookies = request.cookies 
+                cookies = request.cookies
                 uuid = cookies.get("scan_uuid")
                 csv_path = f"static/captured_pics/{uuid}/{uuid}.csv"
-                print(f"writing {csv_path}")
-                print(f"data: {csv_row}")
-                
+                # print(f"Average distance : {average_distance}")
                 with open(csv_path, 'a') as f:
-                    # create the csv writer
                     writer = csv.writer(f)
                     writer.writerow(csv_row)
-            else:
-                print("No apex points detected")
-        
-        # Save metadata txt file
+                print(f"Data saved in {uuid}.csv")
+        except Exception as e:
+            print(f"YOLO error: {e}")
+            return f"YOLO failed: {e}"
+
         save_metadata(filename, outputFrame.bgr.shape[1], outputFrame.bgr.shape[0])
+        return "Saved!"
 
-        res = "file saved!"
+    # # trt_yolo=YOLO('yolo/best500apex_openvino_model', task='detect') 
 
-    else:
-        res = "could not save!"
+    # if isCapturing:
+    #     filename = make_file_name(request.get_json(), ".jpg")
+    #     annotated_image = outputFrame.bgr.copy()
+    #     print(f"saving img file: {filename}")
+    #     # Convert BGR to RGB and save the image
+    #     # im_rgb = outputFrame.bgr[:, :, [2, 1, 0]]
+    #     # Image.fromarray(im_rgb).save(filename)
+    #     with lock:
+    #         cv2.imwrite(filename, outputFrame.bgr, [cv2.IMWRITE_JPEG_QUALITY, 100])
+    #         csv_row = []
+            
+    #         res1 = trt_yolo.predict(outputFrame.bgr, conf=0.2, imgsz=224) #Add "show=True" to see the image with boxes          
+    #         if len( res1[0] ) >= 2 : 
+    #             print(res1[0].boxes.xyxy)
+    #             ## check apex brighness
+    #             prominance_sum = 0                
+    #             results = res1[0]  # First image's prediction
+    #             if results.boxes is not None:
+    #                 for box in results.boxes:
+    #                     x1, y1, x2, y2 = map(int, box.xyxy[0].tolist()) 
+    #                     if y2 > y1 and x2 > x1:
+    #                         cap_box = cv2.medianBlur(outputFrame.bgr[y1:y2, x1:x2, 1], 5)
+    #                         mean, std = cv2.meanStdDev(cap_box)
+    #                         prominance_sum +=  std[0][0]  # std is 2D array
 
-    print(res)
-    return res
+    #                         c_point = ((x1 + x2) // 2, (y1 + y2) // 2)
+    #                         csv_row += c_point
+
+    #                         cv2.rectangle(annotated_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    #                         cv2.putText(annotated_image, f"Std: {prominance_sum:.2f}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX,
+    #                          0.5, (0, 255, 0), 1)
+    #                     else:
+    #                         print(f"Skipping invalid box: {x1}, {y1}, {x2}, {y2}")
+    #                 # check the meanStdDeviation of the detected apex to estimate apex prominance
+    #                 # cap_box = cv2.medianBlur(outputFrame.bgr[box[1]:box[3], box[0]:box[2], 1], 5)
+    #                 # print(f"Box value: {box}")
+    #                 # x1, y1, x2, y2 = map(int, box.xyxy[:4])  # ensure all indices are integers
+    #                 # cap_box = cv2.medianBlur(outputFrame.bgr[y1:y2, x1:x2, 1], 5)
+
+    #                 # mean, std = cv2.meanStdDev(cap_box)
+    #                 # prominance_sum += std
+    #                 # print(f"m:{mean} s:{std}")
+
+    #                 # c_point = ( int((box[0]+box[2]) / 2), int((box[1]+box[3]) / 2) )
+    #                 # csv_row += c_point
+
+    #             avg_prominance = int(prominance_sum / len(results.boxes))
+    #             csv_row.append(f"ap_{avg_prominance}")
+
+    #             # open the file in the write mode
+    #             cookies = request.cookies 
+    #             uuid = cookies.get("scan_uuid")
+    #             csv_path = f"static/captured_pics/{uuid}/{uuid}.csv"
+    #             print(f"writing {csv_path}")
+    #             print(f"data: {csv_row}")
+                
+    #             with open(csv_path, 'a') as f:
+    #                 # create the csv writer
+    #                 writer = csv.writer(f)
+    #                 writer.writerow(csv_row)
+    #         else:
+    #             print("No apex points detected")
+        
+    #     # Save metadata txt file
+    #     save_metadata(filename, outputFrame.bgr.shape[1], outputFrame.bgr.shape[0])
+
+    #     res = "file saved!"
+
+    # else:
+    #     res = "could not save!"
+
+    # print(res)
+    # with lock:
+    #     cv2.imwrite("imagebox", annotated_image, [cv2.IMWRITE_JPEG_QUALITY, 100])
+    # return res
     
 
 @APP.route('/play_music', methods=['POST'])
@@ -423,14 +606,20 @@ def play_music():
     csvfile = open(csv_path)
     reader = csv.reader(csvfile)
     has_data = len(list(reader))
+
     if not os.path.exists(csv_path):
-        res = "CSV file not found"
-    elif (has_data > 0):
+        return jsonify({"status": "error", "message": "CSV file not found"})
+
+    with open(csv_path, newline='') as csvfile:
+        reader = csv.reader(csvfile)
+        rows = list(reader)
+
+    if len(rows) > 1:
         value_music = picker.data_to_music(uuid)
-        res = f"Music found {value_music}"
+        return jsonify({"status": "ok", "audio_file": value_music})
+
     else:
-        res = "Not enough data"
-    return res
+        return jsonify({"status": "error", "message": "Not enough data"})
 
 # Save a series of image files (panorama) along the X axis
 # The staring point of the panorama should be the center of the interest area
@@ -841,11 +1030,15 @@ def init_scope():
     cap_mode = cap.available_modes[UVC_SETTINGS["capture_mode"]]
     print("CAPMODE", cap_mode)
     print("Setting Capture Mode:", cap_mode)
-    for mode in cap.available_modes :
-        try :
-            cap.frame_mode = mode
-        except uvc.InitError as err:
-                print(f"{cap.name} mode selection - {err}")
+    cap.frame_mode = cap_mode
+    print("Capture Mode Set:", cap.frame_mode)
+
+    # for mode in cap.available_modes:
+    #     try :
+    #         cap.frame_mode = mode
+    #     except uvc.InitError as err:
+    #             print(f"{cap.name} mode selection - {err}")
+    
     cap.get_frame_robust()
     time.sleep(1)
 

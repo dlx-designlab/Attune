@@ -172,6 +172,17 @@
       <button id="play-music-btn" class="record-button fas fa-music fa-1_5x"  onclick="play_music_control()"></button>
   </div>
 
+  <div class="w3-display-bottommiddle" style="bottom: 130px; position: absolute;">
+    <audio id="audio" style="display: none;">
+        <source src="{{ url_for('static', filename='audio_samples/' + audio) }}" type="audio/mpeg">
+    </audio>
+    </div>
+
+    <div class="w3-display-bottommiddle" style="bottom: 150px; position: absolute;">
+        <i class="fas fa-volume-up" style="font-size: 30px; margin-right: 10px;color: white;"></i>
+        <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
+    </div>
+
   <div class="status-log w3-display-bottomright">
       <p id="status"> *** Status Log ***</p>
   </div>
@@ -336,7 +347,15 @@
           contentType: 'application/json;charset=UTF-8',
           //data: JSON.stringify({'control': ctl, 'value': val}),
           success: function(result) {
-                document.getElementById("status").innerHTML = result;
+            if (result.status === "ok") {
+                const audio = document.getElementById("audio");
+                audio.src = "/static/audio_samples/" + result.audio_file + ".mp3";
+                audio.play();
+                document.getElementById("status").innerHTML = "Playing: " + result.audio_file;
+            }   
+            else {
+            document.getElementById("status").innerHTML = result.message;
+            }
           },
           error: function(result) {
                 document.getElementById("status").innerHTML = "ERROR!";
@@ -344,6 +363,18 @@
       });
 
     };
+
+    document.addEventListener("DOMContentLoaded", function () {
+    const audio = document.getElementById("audio");
+    const slider = document.getElementById("volumeSlider");
+
+    slider.addEventListener("input", function () {
+        audio.volume = parseFloat(this.value);
+    });
+
+    // Facultatif : démarrer la lecture plus tard, ou via bouton
+    // audio.play();
+    });
 
     // Keyboard keys to control scope motion 
     $(window).keydown(function(e) {

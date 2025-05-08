@@ -1,7 +1,7 @@
 import uvc
 import logging
 import cv2
-import time
+import time 
 
 logging.basicConfig(level=logging.INFO)
 
@@ -11,10 +11,10 @@ cap = uvc.Capture(dev_list[0]["uid"])
 
 # Print available Capture Modes
 print("Availbale Capture Modes:")
-for count, mode in enumerate(cap.avaible_modes):
+for count, mode in enumerate(cap.available_modes):
     print(count, mode)
 
-capture_mode = cap.avaible_modes[0]
+capture_mode = cap.available_modes[0]
 cap.frame_mode = (capture_mode[0], capture_mode[1], capture_mode[2])
 
 # Uncomment the following lines to configure the Pupil 200Hz IR cameras:
@@ -49,7 +49,7 @@ while True:
 
     elif k == -1:
         continue
-    # else:
+    # else: 
     #     print(k)
 
 cap = None

@@ -48,9 +48,9 @@ class MusicPicker:
                 data.append(row)
                 
         # Calculate capillary density, distribution, and brightness
-        cap_density = 0         # average ammount of apex points in a sample
+        cap_density = 7         # average ammount of apex points in a sample
         cap_distribution = 0    # average distance between apex points in a sample
-        cap_brightness = 20      # average brightness of the sample
+        cap_brightness = 7      # average brightness of the sample
 
         # convert data to coordinates
         clean_data = []
