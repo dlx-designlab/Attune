@@ -25,7 +25,7 @@
 "grbl_controller_address": "/dev/ttyAMA0",
 "default_step_size": 0.2,
 "default_feed_rate": 1000,
-"fnger_home_pos": {"x_pos": 8, "y_pos": 8, "z_pos": 4, "scope_min_dist": 5},
+"fnger_home_pos": {"x_pos": 5.4, "y_pos": 6, "z_pos": 5, "scope_min_dist": 5},
 "panorama_size": {"width": 4, "height": 0.5, "step": 0.5},
 "apex_detection_model": "yolo/best500apex_openvino_model",
 "PD_Calc": {"slope": -0.003267353, "intercept": 1.637155924}
