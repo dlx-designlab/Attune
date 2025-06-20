@@ -243,7 +243,6 @@ def home_finger():
 @APP.route('/find_caps', methods=['POST'])
 def find_capillaries():
     global FOCUS, DETECTOR, SCOPE_RESET, outputFrame, controls_dict
-    # trt_yolo=YOLO('yolo/best500apex_openvino_model', task='detect')
     
     # TODO: Make better reset cycle
     SCOPE_RESET = False
@@ -292,59 +291,195 @@ def find_capillaries():
 
         print("Finding rough position of capillaries.")
         caps_found = False
-        grbl_control.stepSize = 0.5
-        time.sleep(0.5)
-        while grbl_control.yPos < grbl_control.yLimit - 1 and not SCOPE_RESET and not caps_found:
-            # Take a large step along the y axis then 4 smaller steps along the z axis.
-            grbl_control.jog_step(0, 3, -4)
-            time.sleep(0.5)
-            print("TESTEST")
-            res1 = trt_yolo.predict(outputFrame.bgr, conf=0.1, imgsz=224)
-            if len(res1[0]) > 2:
-                caps_found = True
-                break
-                
-            for _ in range(4):
-                grbl_control.jog_step(0, 0, 1)
-                time.sleep(0.2)
-                res2 = trt_yolo.predict(outputFrame.bgr, conf=0.1, imgsz=224)
-                if len(res2[0]) > 2:
-                    caps_found = True
-                    break
-                    
-                if SCOPE_RESET:
-                    break
-
-                
-        if not caps_found:
-            res = "Could not find caps"
-            return res
-
-        print("Refining capillary location in small steps.")
-        grbl_control.jog_step(0, -4, 0)
-        time.sleep(0.5)
         grbl_control.stepSize = 0.2
+        time.sleep(0.2)
+        caps_max = 0
+        nothing = 0
+        flag = 0
+        detect = 0
+        if (UVC_SETTINGS["find_capillaries_slow"]):
+            print("Finding the capillaries (slow mode)")
+            while grbl_control.yPos < grbl_control.yLimit - 1 and not SCOPE_RESET and nothing < 6 :
+                y_position = grbl_control.yPos
+                z_position = grbl_control.zPos
+                grbl_control.jog_step(0, 6, -12)
+                time.sleep(0.75)
+                nothing = 0
+                for _ in range(6):
+                    grbl_control.jog_step(0, 0, 2)
+                    print("joglit")
+                    time.sleep(0.75)
+                    detect = detect_capillaries()
+                    if detect != 0 and len(detect) > 7 :
+                        flag = 1
+                        print("found")
+                        caps = (len(detect)-1)/2
+                        if caps > caps_max :
+                            caps_max = caps
+                            y_position = grbl_control.yPos
+                            z_position = grbl_control.zPos
+                    else :
+                        print("no detect")
+                        if flag == 1:
+                            print("nothing=", nothing)
+                            nothing += 1
+                    if SCOPE_RESET:
+                        break
+        if (UVC_SETTINGS["find_capillaries_fast"]):
+            caps = 1
+            print("Finding the capillaries (fast mode)")
+            while grbl_control.yPos < grbl_control.yLimit - 1 and not SCOPE_RESET and not caps_found:
+                y_position = grbl_control.yPos
+                z_position = grbl_control.zPos
+                grbl_control.jog_step(0, 6, -12)
+                time.sleep(0.5)
+                for _ in range(6):
+                    grbl_control.jog_step(0, 0, 2)
+                    print("joglit")
+                    time.sleep(0.5)
+                    detect = detect_capillaries()
+                    if detect != 0 and len(detect) > 7 :
+                        for _ in range(3):
+                            y_position = grbl_control.yPos
+                            print("y_test")
+                            grbl_control.jog_step(0, 1, 0)
+                            time.sleep(0.5)
+                            detect = detect_capillaries()
+                            if detect == 0:
+                                caps = 0
+                            else:
+                                caps = (len(detect)-1)/2
+                                if caps > caps_max:
+                                    caps_max = caps
+                                    y_position = grbl_control.yPos
+                        grbl_control.jog_to_pos(grbl_control.xPos, y_position, grbl_control.zPos)
+                        grbl_control.jog_step(0, 0, -2)
+                        for _ in range(4) :
+                            y_position = grbl_control.yPos
+                            print("y_test")
+                            grbl_control.jog_step(0, 0, 1)
+                            time.sleep(1)
+                            detect = detect_capillaries()
+                            if detect != 0 and len(detect) > 7 :
+                                caps = (len(detect)-1)/2
+                                if caps > caps_max:
+                                    caps_max = caps
+                                    z_position = grbl_control.zPos
+                        caps_found = True
+               
+        if (UVC_SETTINGS["find_capillaries_very_fast"]):
+            while grbl_control.yPos < grbl_control.yLimit - 1 and not SCOPE_RESET and not caps_found:
+                grbl_control.jog_step(0, 6, -12)
+                time.sleep(0.7)
+                for _ in range(6):
+                    grbl_control.jog_step(0, 0, 2)
+                    time.sleep(0.7)
+                    detect = detect_capillaries()
+                    if detect != 0 and len(detect) > 9 :
+                        y_position = grbl_control.yPos
+                        z_position = grbl_control.zPos
+                        caps_found = True
+        
+        grbl_control.jog_to_pos(grbl_control.xPos, y_position, z_position)
 
-        while grbl_control.yPos < grbl_control.yLimit - 1 and SCOPE_RESET == False:
-            grbl_control.jog_step(0, 1, 0)
-            time.sleep(0.1)
-            res3 = trt_yolo.predict(outputFrame.bgr, conf=0.1, imgsz=224)
-            if len(res3[0]) > 2:
-                break
+                    # caps = 1
+                    # grbl_control.stepSize = 0.2
+                    # while caps != 0 and grbl_control.yPos < grbl_control.yLimit - 1 and not caps_f:
+                    #     y_position = grbl_control.yPos
+                    #     print("y_test")
+                    #     grbl_control.jog_step(0, 1, 0)
+                    #     time.sleep(0.2)
+                    #     detect = detect_capillaries()
+                    #     if detect == 0:
+                    #         caps = 0
+                    #     else:
+                    #         caps_f = 1
+                    # caps_f = 0
+                    # grbl_control.jog_step(0, 0, -2)
+                    # if caps_f > 5 :
+                    #     for _ in range(5):
 
-        print("Adjust focus for most capillaries.")
-        grbl_control.stepSize = 0.1
-        grbl_control.jog_step(0, 8, -5)
-        time.sleep(0.5)
+                            # caps = (len(detect)-1)/2
+                            # if caps > caps_max:
+                            #     caps_max = caps
+                            #     y_position = grbl_control.yPos
+                            #     grbl_control.jog_step(0, 0, -2)
+                            # while caps != 0 :
+                            #     z_position = grbl_control.zPos
+                            #     print("z_test")
+                            #     grbl_control.jog_step(0, 0, 1)
+                            #     time.sleep(0.2)
+                            #     detect = detect_capillaries()
+                            #     if detect == 0:
+                            #         caps = 0
+                            #     else:
+                            #         caps = (len(detect)-1)/2
+                            #         if caps > caps_max:
+                            #             caps_max = caps
+                            #             z_position = grbl_control.zPos
 
-        prev_count = 0
-        for _ in range(20):
-            grbl_control.jog_step(0, 0, 1)
-            time.sleep(0.1)
-            res4 = trt_yolo.predict(outputFrame.bgr, conf=0.1, imgsz=224)
-            if (len(res4[0]) < prev_count or SCOPE_RESET == True):
-                break
-            prev_count = len(res4[0])      
+                    # caps = 1
+                    # z_position = grbl_control.zPos
+                    # grbl_control.jog_step(0, 0, -2)
+                    # while caps != 0 :
+                    #     print("z_test")
+                    #     grbl_control.jog_step(0, 0, 1)
+                    #     time.sleep(0.2)
+                    #     detect = detect_capillaries()
+                    #     if detect == 0:
+                    #         caps = 0
+                    #     else:
+                    #         caps = (len(detect)-1)/2
+                    #         if caps > caps_max:
+                    #             caps_max = caps
+                    #             z_position = grbl_control.zPos
+                    # grbl_control.jog_to_pos(grbl_control.xPos, grbl_control.yPos, z_position)
+
+                    # while caps != 0:
+                    #     print("z_test")
+                    #     grbl_control.jog_step(0, 0, -1)
+                    #     time.sleep(0.2)
+                    #     caps = (len(detect_capillaries)-1)/2
+                    #     if caps > caps_max:
+                    #         caps_max = caps
+                    #         z_position = grbl_control.zPos
+                    # caps_found = True
+                    # break
+                        
+                    # if SCOPE_RESET:
+                    #     break
+
+        # grbl_control.jog_to_pos(grbl_control.xPos, y_position, z_position)
+
+        # if not caps_found:
+        #     res = "Could not find caps"
+        #     return res
+
+        # print("Refining capillary location in small steps.")
+        # grbl_control.jog_step(0, -4, 0)
+        # time.sleep(0.5)
+        # grbl_control.stepSize = 0.2
+
+        # while grbl_control.yPos < grbl_control.yLimit - 1 and SCOPE_RESET == False:
+        #     grbl_control.jog_step(0, 1, 0)
+        #     time.sleep(0.1)
+        #     res3 = trt_yolo.predict(outputFrame.bgr, conf=0.1, imgsz=224)
+        #     if len(res3[0]) > 2:
+        #         break
+
+        # print("Adjust focus for most capillaries.")
+        # grbl_control.stepSize = 0.1
+        # grbl_control.jog_step(0, 8, -5)
+        # time.sleep(0.5)
+
+        # prev_count = 0
+        # for _ in range(20):
+        #     grbl_control.jog_step(0, 0, 1)
+        #     time.sleep(0.1)
+        #     res4 = trt_yolo.predict(outputFrame.bgr, conf=0.1, imgsz=224)
+        #     if (len(res4[0]) < prev_count or SCOPE_RESET == True):
+        #         break
+        #     prev_count = len(res4[0])      
         
         res = "Capillaries found"
 
@@ -365,48 +500,15 @@ def save_image():
         filename = make_file_name(request.get_json() or {}, ".jpg")
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         
-        detections = []
-        
-        with lock:
-            if outputFrame is None:
-                return "No frame"
-                        
-            res = trt_yolo.predict(outputFrame.bgr, conf=0.15, imgsz=224, verbose=False)[0]
-            
-            if res.boxes:
-                h, w = outputFrame.bgr.shape[:2]
-                for box in res.boxes:
-                    x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
-                    cx, cy = (x1+x2)//2, (y1+y2)//2
-                    
-                    y_start, y_end = max(0, cy-10), min(h, cy+10)
-                    x_start, x_end = max(0, cx-10), min(w, cx+10)
-                    roi = outputFrame.bgr[y_start:y_end, x_start:x_end, 1]
-                    
-                    if roi.size > 0:
-                        _, std = cv2.meanStdDev(roi)
-                        detections.append((cx, cy, std[0][0]))
-        
-        
-        if detections:
+        csv_row = detect_capillaries()
+        if csv_row != 0:
             cv2.imwrite(filename, outputFrame.bgr, [cv2.IMWRITE_JPEG_QUALITY, 85])
-            csv_row = []
-            prom_sum = 0
-            for cx, cy, prom in detections:
-                csv_row.extend([cx, cy])
-                prom_sum += prom
-            
-            csv_row.append(f"ap_{int(prom_sum/len(detections))}")
-            
             uuid = request.cookies.get("scan_uuid")
             with open(f"static/captured_pics/{uuid}/{uuid}.csv", 'a') as f:
                 csv.writer(f).writerow(csv_row)
-
+        elif csv_row == 0:
+            return "No detection!"
         # Reset the model to free up resources
-        del trt_yolo
-        gc.collect()
-        trt_yolo = YOLO('yolo/best500apex_openvino_model', task='detect')
-        print(csv_row)
         return "Saved!"
     except Exception as e:
         print(f"Error: {e}")
@@ -442,10 +544,8 @@ def play_music():
 @APP.route('/save_image_panorama', methods=['POST'])
 def save_image_panorama():
 
-    global PANORAMA_SIZE
-    global outputFrame
+    global PANORAMA_SIZE, outputFrame, capture_mode, FINGER_HOME_POS
     print(f"Capturing Panorama: {PANORAMA_SIZE}")
-    # trt_yolo=YOLO("yolo/best500apex_openvino_model")
 
     # Move to start point - the top right corner of the panorama
     # Half the width and height away from the current position
@@ -472,41 +572,7 @@ def save_image_panorama():
             print(f"saving img file: {filename}")
             with lock:
                 # outputFrame = cap.get_frame_robust()
-                # res1 = trt_yolo.predict(outputFrame.bgr, conf=0.05, imgsz=224)
                 cv2.imwrite(filename, outputFrame.bgr, [cv2.IMWRITE_JPEG_QUALITY, 100])
-                csv_row = []
-
-                # if len(res1[0].boxes) > 0 : 
-                #     # check apex brighness
-                #     prominance_sum = 0                
-                #     results = res1[0]  # First image's prediction
-                #     if results.boxes is not None:
-                #         for box in results.boxes:
-                #             x1, y1, x2, y2 = map(int, box.xyxy[0].tolist()) 
-                #             if y2 > y1 and x2 > x1:
-                #                 cap_box = cv2.medianBlur(outputFrame.bgr[y1:y2, x1:x2, 1], 5)
-                #                 mean, std = cv2.meanStdDev(cap_box)
-                #                 prominance_sum += std[0][0]  # std is 2D array
-
-                #                 c_point = ((x1 + x2) // 2, (y1 + y2) // 2)
-                #                 csv_row += c_point
-                #             else:
-                #                 print(f"Skipping invalid box: {x1}, {y1}, {x2}, {y2}")
-                    
-                #     avg_prominance = int(prominance_sum / len(res1[0].boxes))
-                #     csv_row.append(f"ap_{avg_prominance}")
-
-                #     # open the file in the write mode
-                #     cookies = request.cookies 
-                #     uuid = cookies.get("scan_uuid")
-                #     csv_path = f"static/captured_pics/{uuid}/{uuid}.csv"
-                #     print(f"writing {csv_path}")
-                #     print(f"data: {csv_row}")
-                    
-                #     with open(csv_path, 'a') as f:
-                #         # create the csv writer
-                #         writer = csv.writer(f)
-                #         writer.writerow(csv_row)
             
             # Save metadata txt file
             save_metadata(filename, outputFrame.bgr.shape[1], outputFrame.bgr.shape[0])
@@ -514,18 +580,25 @@ def save_image_panorama():
             x_pos += PANORAMA_SIZE["step"]
             grbl_control.jog_to_pos(x_pos, y_pos, z_pos)
             time.sleep(0.2)
-        
-        out = make_file_name(request.get_json(), "", pan_pos="stitched")
-        system(f"nona -o {out} -m PNG template.pto {' '.join(filenames[-8:])}")
 
-        res = f"Panorama Done! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos}"
+        out = make_file_name(request.get_json(), "", pan_pos="stitched")
+        if UVC_SETTINGS["capture_mode"] == 3:
+            system(f"nona -o {out} -m PNG template_1920x1080.pto {' '.join(filenames[-8:])}")
+        # elif UVC_SETTINGS["capture_mode"] == 2:
+        #     system(f"nona -o {out} -m PNG template_1270x720.pto {' '.join(filenames[-8:])}")
+
+        #system(f"nona -o {out} -m PNG {template} {' '.join(filenames[-8:])}")
+
+        pan = f"Panorama Done! XYZ: {grbl_control.xPos} : {grbl_control.yPos} : {grbl_control.zPos}"
     
     else:
-        res = "could not save!"
+        pan = "Could not save!"
 
     print(f"Took: {time.time() - start_time} sec.")
-    print(res)
-    return res
+    print(pan)
+    grbl_control.jog_to_pos(FINGER_HOME_POS["x_pos"], grbl_control.yPos, grbl_control.zPos)
+    time.sleep(0.5)
+    return pan
 
 
 # Capture a short video
@@ -597,13 +670,16 @@ def download_gallery():
     cookies = request.cookies
     uid = cookies.get("scan_uuid")
     user_files_path = f"static/captured_pics/{uid}"
+    print("zipping file")
 
     pyzip = PyZip(PyFolder(user_files_path, interpret=False))
     zipped_filename = f"static/captured_pics/{uid}.zip"
     pyzip.save(zipped_filename)
+    print("zipped file 2")
 
     try:
-        return send_file(zipped_filename, as_attachment=True, attachment_filename=f'{uid}.zip')
+        return send_file(zipped_filename, as_attachment=True)
+        # attachment_filename=f'{uid}.zip'
     except Exception as exception:
         return str(exception)
 
@@ -797,7 +873,52 @@ def test_model():
         else:
             yield b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + placeholder_image + b'\r\n'
 
-   
+def detect_capillaries():
+    global trt_yolo, outputFrame, lock, isCapturing
+    
+    try:
+        trt_yolo = YOLO('yolo/best500apex_openvino_model', task='detect')
+
+        detections = []
+        with lock:
+            if outputFrame is None:
+                return "No frame"
+                        
+            res = trt_yolo.predict(outputFrame.bgr, conf=0.15, imgsz=224, verbose=False)[0]
+            
+            if res.boxes:
+                h, w = outputFrame.bgr.shape[:2]
+                for box in res.boxes:
+                    x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+                    cx, cy = (x1+x2)//2, (y1+y2)//2
+                    
+                    y_start, y_end = max(0, cy-10), min(h, cy+10)
+                    x_start, x_end = max(0, cx-10), min(w, cx+10)
+                    roi = outputFrame.bgr[y_start:y_end, x_start:x_end, 1]
+                    
+                    if roi.size > 0:
+                        _, std = cv2.meanStdDev(roi)
+                        detections.append((cx, cy, std[0][0]))
+        if detections:
+            csv_row = []
+            prom_sum = 0
+            for cx, cy, prom in detections:
+                csv_row.extend([cx, cy])
+                prom_sum += prom
+            csv_row.append(f"ap_{int(prom_sum/len(detections))}")
+
+        else :
+            return 0
+
+        # Reset the model to free up resources
+        del trt_yolo, res
+        gc.collect()
+        print(csv_row)
+        return csv_row
+        
+    except Exception as e:
+        print(f"Error: {e}")
+        return f"Failed: {e}"
 
 # Switching between scope capture on and off
 def toggle_capture():    
